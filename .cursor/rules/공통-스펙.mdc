@@ -1,0 +1,68 @@
+---
+alwaysApply: false
+---
+# API 공통 응답 스펙
+
+## 성공 응답
+
+```typescript
+{
+  success: true,
+  data: T  // 실제 응답 데이터
+}
+```
+
+### 예시
+
+```typescript
+// 단일 객체
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "홍길동"
+  }
+}
+
+// 배열
+{
+  "success": true,
+  "data": [
+    { "id": 1, "name": "홍길동" },
+    { "id": 2, "name": "김철수" }
+  ]
+}
+```
+
+## 에러 응답
+
+```typescript
+{
+  success: false,
+  error: {
+    code: string,      // 에러 코드 (예: "AUTH_001", "VALIDATION_001")
+    message: string    // 사용자에게 보여줄 에러 메시지
+  }
+}
+```
+
+### 예시
+
+```typescript
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_001",
+    "message": "인증에 실패했습니다."
+  }
+}
+```
+
+## HTTP 상태 코드
+
+- 200: 성공
+- 400: 잘못된 요청 (validation error 등)
+- 401: 인증 실패
+- 403: 권한 없음
+- 404: 리소스 없음
+- 500: 서버 에러
