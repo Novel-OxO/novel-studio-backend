@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { createAppLogger, GlobalExceptionFilter, setupSwagger } from './api/support';
@@ -40,5 +40,8 @@ async function bootstrap() {
   setupSwagger(app);
 
   await app.listen(process.env.PORT ?? 3000);
+
+  Logger.log(`Server is running on ${await app.getUrl()}`);
+  Logger.log(`Environment: ${process.env.NODE_ENV}`);
 }
 bootstrap();
