@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { GlobalExceptionFilter } from './api/support';
+import { GlobalExceptionFilter, setupSwagger } from './api/support';
 import { AppModule } from './modules/app.module';
 
 function setupGlobalPipes(app: INestApplication) {
@@ -35,6 +35,7 @@ async function bootstrap() {
   setupGlobalPipes(app);
   setupGlobalFilters(app);
   setupCors(app);
+  setupSwagger(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }
