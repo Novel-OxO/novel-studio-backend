@@ -18,6 +18,7 @@
       "@/*": ["src/*"],
       "@test/*": ["test/*"]
     },
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

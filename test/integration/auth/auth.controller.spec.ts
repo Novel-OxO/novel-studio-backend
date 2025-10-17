@@ -77,4 +77,70 @@ describe('AuthController (Integration)', () => {
       await request(app.getHttpServer()).post('/auth/signin').send(signInRequest).expect(HttpStatus.UNAUTHORIZED);
     });
   });
+
+  describe('GET /auth/me', () => {
+    it('유효한 액세스 토큰으로 요청 시 200 상태코드와 사용자 정보를 반환한다', async () => {
+      // given
+      const userEmail = 'test@example.com';
+      const userPassword = 'SecurePassword123!';
+      await createTestUser(userEmail, userPassword, '테스트유저');
+
+      const signInResponse = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email: userEmail, password: userPassword })
+        .expect(HttpStatus.OK);
+
+      const accessToken = signInResponse.body.data.accessToken;
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('userId');
+      expect(response.body.data).toHaveProperty('role');
+      expect(typeof response.body.data.userId).toBe('string');
+      expect(response.body.data.role).toBe('USER');
+    });
+
+    it('액세스 토큰 없이 요청 시 401 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/auth/me').expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('잘못된 액세스 토큰으로 요청 시 401 상태코드를 반환한다', async () => {
+      // given
+      const invalidToken = 'invalid.token.here';
+
+      // when & then
+      await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${invalidToken}`)
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('Bearer 형식이 아닌 토큰으로 요청 시 401 상태코드를 반환한다', async () => {
+      // given
+      const userEmail = 'test@example.com';
+      const userPassword = 'SecurePassword123!';
+      await createTestUser(userEmail, userPassword, '테스트유저');
+
+      const signInResponse = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email: userEmail, password: userPassword })
+        .expect(HttpStatus.OK);
+
+      const accessToken = signInResponse.body.data.accessToken;
+
+      // when & then
+      await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', accessToken) // Bearer 없이 토큰만 전송
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+  });
 });
