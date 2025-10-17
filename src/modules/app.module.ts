@@ -6,6 +6,7 @@ import { LoggerMiddleware } from '@/api/support';
 import { AuthModule } from './auth.module';
 import { CourseModule } from './course.module';
 import { PrismaModule } from './prisma.module';
+import { SectionModule } from './section.module';
 import { UserModule } from './user.module';
 
 const getEnvFilePath = (): string => {
@@ -30,7 +31,7 @@ const externalModules = [
   PrismaModule,
 ];
 
-const internalModules = [UserModule, AuthModule, CourseModule];
+const internalModules = [UserModule, AuthModule, CourseModule, SectionModule];
 
 @Module({
   imports: [...externalModules, ...internalModules],
