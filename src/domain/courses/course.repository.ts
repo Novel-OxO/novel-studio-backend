@@ -19,6 +19,7 @@ export interface CourseListResult {
 export interface ICourseRepository {
   save(course: NewCourse): Promise<Course>;
   update(course: UpdateCourse): Promise<Course>;
+  delete(id: string): Promise<void>;
   findById(id: string): Promise<Course | null>;
   findBySlug(slug: string): Promise<Course | null>;
   findAll(page: number, pageSize: number, filter?: CourseFilter): Promise<CourseListResult>;

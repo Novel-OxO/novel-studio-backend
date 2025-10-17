@@ -252,4 +252,15 @@ export class PrismaCourseRepository implements ICourseRepository {
       totalCount,
     };
   }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.course.update({
+      where: {
+        id,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
 }
