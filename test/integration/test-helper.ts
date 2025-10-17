@@ -79,7 +79,8 @@ export class TestHelper {
       throw new Error('Prisma not initialized. Call initializeApp() first.');
     }
 
-    // 모든 테이블의 데이터 삭제
+    // 모든 테이블의 데이터 삭제 (외래 키 제약 조건 고려하여 순서 중요)
+    await this.prisma.course.deleteMany({});
     await this.prisma.user.deleteMany({});
   }
 
