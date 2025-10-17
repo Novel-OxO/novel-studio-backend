@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -186,4 +186,28 @@ export class GetCoursesRequest {
   @IsOptional()
   @IsEnum(CourseLevel, { message: '유효한 난이도를 선택해주세요.' })
   level?: CourseLevel;
+}
+
+export class GetCourseByIdRequest {
+  @ApiProperty({
+    description: '섹션 포함 여부',
+    example: true,
+    default: false,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({ message: '섹션 포함 여부는 불리언이어야 합니다.' })
+  includeSections?: boolean = false;
+
+  @ApiProperty({
+    description: '강의 포함 여부',
+    example: true,
+    default: false,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({ message: '강의 포함 여부는 불리언이어야 합니다.' })
+  includeLectures?: boolean = false;
 }

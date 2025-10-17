@@ -1060,6 +1060,310 @@ describe('CourseController (Integration)', () => {
       // then
       expect(response.body.data.status).toBe(CourseStatus.DRAFT);
     });
+
+    it('includeSections=true일 때 섹션이 포함되어 반환된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 2개 생성
+      const prisma = TestHelper.getPrisma();
+      await prisma.section.createMany({
+        data: [
+          {
+            title: '섹션 1',
+            order: 1,
+            courseId: courseId,
+          },
+          {
+            title: '섹션 2',
+            order: 2,
+            courseId: courseId,
+          },
+        ],
+      });
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get(`/courses/${courseId}?includeSections=true`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data).toHaveProperty('sections');
+      expect(response.body.data.sections).toHaveLength(2);
+      expect(response.body.data.sections[0]).toMatchObject({
+        title: '섹션 1',
+        order: 1,
+        courseId: courseId,
+      });
+      expect(response.body.data.sections[1]).toMatchObject({
+        title: '섹션 2',
+        order: 2,
+        courseId: courseId,
+      });
+    });
+
+    it('includeLectures=true일 때 강의가 포함되어 반환된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 생성
+      const prisma = TestHelper.getPrisma();
+      const section = await prisma.section.create({
+        data: {
+          title: '섹션 1',
+          order: 1,
+          courseId: courseId,
+        },
+      });
+
+      // 강의 2개 생성
+      await prisma.lecture.createMany({
+        data: [
+          {
+            title: '강의 1',
+            order: 1,
+            sectionId: section.id,
+            courseId: courseId,
+          },
+          {
+            title: '강의 2',
+            order: 2,
+            sectionId: section.id,
+            courseId: courseId,
+            description: '강의 2 설명',
+            duration: 600,
+            isPreview: true,
+          },
+        ],
+      });
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get(`/courses/${courseId}?includeLectures=true`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data).toHaveProperty('lectures');
+      expect(response.body.data.lectures).toHaveLength(2);
+      expect(response.body.data.lectures[0]).toMatchObject({
+        title: '강의 1',
+        order: 1,
+        sectionId: section.id,
+        courseId: courseId,
+      });
+      expect(response.body.data.lectures[1]).toMatchObject({
+        title: '강의 2',
+        order: 2,
+        sectionId: section.id,
+        courseId: courseId,
+        description: '강의 2 설명',
+        duration: 600,
+        isPreview: true,
+      });
+    });
+
+    it('includeSections=true&includeLectures=true일 때 섹션과 강의가 모두 포함되어 반환된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 생성
+      const prisma = TestHelper.getPrisma();
+      const section1 = await prisma.section.create({
+        data: {
+          title: '섹션 1',
+          order: 1,
+          courseId: courseId,
+        },
+      });
+
+      const section2 = await prisma.section.create({
+        data: {
+          title: '섹션 2',
+          order: 2,
+          courseId: courseId,
+        },
+      });
+
+      // 강의 생성
+      await prisma.lecture.createMany({
+        data: [
+          {
+            title: '강의 1-1',
+            order: 1,
+            sectionId: section1.id,
+            courseId: courseId,
+          },
+          {
+            title: '강의 2-1',
+            order: 1,
+            sectionId: section2.id,
+            courseId: courseId,
+          },
+        ],
+      });
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get(`/courses/${courseId}?includeSections=true&includeLectures=true`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data).toHaveProperty('sections');
+      expect(response.body.data).toHaveProperty('lectures');
+      expect(response.body.data.sections).toHaveLength(2);
+      expect(response.body.data.lectures).toHaveLength(2);
+    });
+
+    it('옵션 없이 조회할 때 섹션과 강의가 포함되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션과 강의 생성
+      const prisma = TestHelper.getPrisma();
+      const section = await prisma.section.create({
+        data: {
+          title: '섹션 1',
+          order: 1,
+          courseId: courseId,
+        },
+      });
+
+      await prisma.lecture.create({
+        data: {
+          title: '강의 1',
+          order: 1,
+          sectionId: section.id,
+          courseId: courseId,
+        },
+      });
+
+      // when
+      const response = await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data).not.toHaveProperty('sections');
+      expect(response.body.data).not.toHaveProperty('lectures');
+    });
+
+    it('삭제된 섹션과 강의는 포함되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 생성 (1개는 삭제됨, 1개는 정상)
+      const prisma = TestHelper.getPrisma();
+      await prisma.section.create({
+        data: {
+          title: '삭제된 섹션',
+          order: 1,
+          courseId: courseId,
+          deletedAt: new Date(),
+        },
+      });
+
+      const activeSection = await prisma.section.create({
+        data: {
+          title: '정상 섹션',
+          order: 2,
+          courseId: courseId,
+        },
+      });
+
+      // 강의 생성 (1개는 삭제됨, 1개는 정상)
+      await prisma.lecture.create({
+        data: {
+          title: '삭제된 강의',
+          order: 1,
+          sectionId: activeSection.id,
+          courseId: courseId,
+          deletedAt: new Date(),
+        },
+      });
+
+      await prisma.lecture.create({
+        data: {
+          title: '정상 강의',
+          order: 2,
+          sectionId: activeSection.id,
+          courseId: courseId,
+        },
+      });
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get(`/courses/${courseId}?includeSections=true&includeLectures=true`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.sections).toHaveLength(1);
+      expect(response.body.data.sections[0].title).toBe('정상 섹션');
+      expect(response.body.data.lectures).toHaveLength(1);
+      expect(response.body.data.lectures[0].title).toBe('정상 강의');
+    });
   });
 
   describe('DELETE /courses/:id', () => {

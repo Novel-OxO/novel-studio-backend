@@ -1,5 +1,7 @@
 import { CourseLevel, CourseStatus } from '@prisma/client';
 
+import { Lecture } from '@/domain/lectures/lecture';
+import { Section } from '@/domain/sections/section';
 import { User } from '@/domain/users/user';
 
 export class Course {
@@ -15,6 +17,8 @@ export class Course {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  sections?: Section[];
+  lectures?: Lecture[];
 
   constructor(
     id: string,
@@ -29,6 +33,8 @@ export class Course {
     createdAt: Date,
     updatedAt: Date,
     deletedAt: Date | null,
+    sections?: Section[],
+    lectures?: Lecture[],
   ) {
     this.id = id;
     this.slug = slug;
@@ -42,5 +48,7 @@ export class Course {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.deletedAt = deletedAt;
+    this.sections = sections;
+    this.lectures = lectures;
   }
 }

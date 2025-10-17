@@ -15,6 +15,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { AdminGuard } from '@/api/controller/auth/admin.guard';
 import { CurrentUser, type CurrentUserPayload } from '@/api/controller/auth/current-user.decorator';
+import { LectureResponse } from '@/api/controller/lectures/lecture.response';
+import { SectionResponse } from '@/api/controller/sections/section.response';
 import {
   createPaginatedResponse,
   createSuccessResponse,
@@ -27,7 +29,7 @@ import { CourseService } from '@/domain/courses/course.service';
 import { NewCourse } from '@/domain/courses/new-course';
 import { UpdateCourse } from '@/domain/courses/update-course';
 
-import { CreateCourseRequest, GetCoursesRequest, UpdateCourseRequest } from './course.request';
+import { CreateCourseRequest, GetCourseByIdRequest, GetCoursesRequest, UpdateCourseRequest } from './course.request';
 import { CourseResponse } from './course.response';
 
 @ApiTags('courses')
@@ -75,9 +77,8 @@ export class CourseController {
   /**
    * 코스 상세 조회
    *
-   * TODO: 추후 섹션(Section)과 강의(Lecture)가 추가되면,
-   * includeSections, includeLectures 등의 쿼리 파라미터를 통해
-   * 조회 옵션을 선택할 수 있도록 고도화 예정
+   * includeSections, includeLectures 쿼리 파라미터를 통해
+   * 섹션과 강의를 포함하여 조회할 수 있습니다.
    * 예: GET /courses/:id?includeSections=true&includeLectures=true
    */
   @Get(':id')
@@ -92,8 +93,47 @@ export class CourseController {
     status: HttpStatus.NOT_FOUND,
     description: '코스를 찾을 수 없습니다',
   })
-  async getCourseById(@Param('id') id: string): Promise<SuccessResponse<CourseResponse>> {
-    const course = await this.courseService.getCourseById(id);
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '잘못된 요청 파라미터',
+  })
+  async getCourseById(
+    @Param('id') id: string,
+    @Query() query: GetCourseByIdRequest,
+  ): Promise<SuccessResponse<CourseResponse>> {
+    const course = await this.courseService.getCourseById(id, {
+      includeSections: query.includeSections,
+      includeLectures: query.includeLectures,
+    });
+
+    const sections = course.sections?.map(
+      (section) =>
+        new SectionResponse(
+          section.id,
+          section.title,
+          section.order,
+          section.courseId,
+          section.createdAt,
+          section.updatedAt,
+        ),
+    );
+
+    const lectures = course.lectures?.map(
+      (lecture) =>
+        new LectureResponse(
+          lecture.id,
+          lecture.title,
+          lecture.description,
+          lecture.order,
+          lecture.duration,
+          lecture.isPreview,
+          lecture.sectionId,
+          lecture.courseId,
+          lecture.videoStorageInfo,
+          lecture.createdAt,
+          lecture.updatedAt,
+        ),
+    );
 
     const response = new CourseResponse(
       course.id,
@@ -105,6 +145,8 @@ export class CourseController {
       course.level,
       course.status,
       course.createdAt,
+      sections,
+      lectures,
     );
 
     return createSuccessResponse(response);
