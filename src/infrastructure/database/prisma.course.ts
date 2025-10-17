@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { Course } from '@/domain/courses/course';
-import { ICourseRepository } from '@/domain/courses/course.repository';
+import { CourseFilter, CourseListResult, ICourseRepository } from '@/domain/courses/course.repository';
 import { NewCourse } from '@/domain/courses/new-course';
 import { UpdateCourse } from '@/domain/courses/update-course';
 import { User, UserRole } from '@/domain/users/user';
@@ -192,5 +192,64 @@ export class PrismaCourseRepository implements ICourseRepository {
       updatedCourse.updatedAt,
       updatedCourse.deletedAt,
     );
+  }
+
+  async findAll(page: number, pageSize: number, filter?: CourseFilter): Promise<CourseListResult> {
+    const skip = (page - 1) * pageSize;
+
+    const where = {
+      deletedAt: null,
+      ...(filter?.status && { status: filter.status }),
+      ...(filter?.level && { level: filter.level }),
+    };
+
+    const [courses, totalCount] = await Promise.all([
+      this.prisma.course.findMany({
+        where,
+        include: {
+          instructor: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.course.count({ where }),
+    ]);
+
+    const coursesWithInstructor = courses.map((course) => {
+      const instructor = new User(
+        course.instructor.id,
+        course.instructor.email,
+        course.instructor.hashedPassword,
+        course.instructor.nickname,
+        course.instructor.profileImageUrl,
+        course.instructor.role as UserRole,
+        course.instructor.createdAt,
+        course.instructor.updatedAt,
+        course.instructor.deletedAt,
+      );
+
+      return new Course(
+        course.id,
+        course.slug,
+        course.title,
+        course.description,
+        instructor,
+        course.thumbnailUrl,
+        course.price,
+        course.level,
+        course.status,
+        course.createdAt,
+        course.updatedAt,
+        course.deletedAt,
+      );
+    });
+
+    return {
+      courses: coursesWithInstructor,
+      totalCount,
+    };
   }
 }

@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -141,4 +142,48 @@ export class UpdateCourseRequest {
   @IsOptional()
   @IsEnum(CourseStatus, { message: '유효한 상태를 선택해주세요.' })
   status?: CourseStatus;
+}
+
+export class GetCoursesRequest {
+  @ApiProperty({
+    description: '페이지 번호 (1부터 시작)',
+    example: 1,
+    default: 1,
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: '페이지 번호는 정수여야 합니다.' })
+  @Min(1, { message: '페이지 번호는 1 이상이어야 합니다.' })
+  page?: number = 1;
+
+  @ApiProperty({
+    description: '페이지당 항목 수',
+    example: 10,
+    default: 10,
+    required: false,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: '페이지 크기는 정수여야 합니다.' })
+  @Min(1, { message: '페이지 크기는 1 이상이어야 합니다.' })
+  pageSize?: number = 10;
+
+  @ApiProperty({
+    description: '상태 필터',
+    enum: CourseStatus,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(CourseStatus, { message: '유효한 상태를 선택해주세요.' })
+  status?: CourseStatus;
+
+  @ApiProperty({
+    description: '난이도 필터',
+    enum: CourseLevel,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(CourseLevel, { message: '유효한 난이도를 선택해주세요.' })
+  level?: CourseLevel;
 }

@@ -620,4 +620,286 @@ describe('CourseController (Integration)', () => {
       expect(response.body.data.thumbnailUrl).toBeNull();
     });
   });
+
+  describe('GET /courses', () => {
+    it('코스 목록을 페이지네이션과 함께 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 테스트용 코스 3개 생성
+      for (let i = 1; i <= 3; i++) {
+        await request(app.getHttpServer())
+          .post('/courses')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({
+            slug: `course-${i}`,
+            title: `코스 ${i}`,
+            description: `코스 ${i} 설명`,
+          })
+          .expect(HttpStatus.CREATED);
+      }
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.data).toHaveProperty('items');
+      expect(response.body.data).toHaveProperty('pagination');
+      expect(response.body.data.items).toHaveLength(3);
+      expect(response.body.data.pagination).toMatchObject({
+        totalCount: 3,
+        page: 1,
+        pageSize: 10,
+        totalPages: 1,
+      });
+    });
+
+    it('페이지네이션이 정상 동작한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 테스트용 코스 5개 생성
+      for (let i = 1; i <= 5; i++) {
+        await request(app.getHttpServer())
+          .post('/courses')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({
+            slug: `course-${i}`,
+            title: `코스 ${i}`,
+            description: `코스 ${i} 설명`,
+          })
+          .expect(HttpStatus.CREATED);
+      }
+
+      // when - 페이지 크기 2로 2페이지 요청
+      const response = await request(app.getHttpServer()).get('/courses?page=2&pageSize=2').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.items).toHaveLength(2);
+      expect(response.body.data.pagination).toMatchObject({
+        totalCount: 5,
+        page: 2,
+        pageSize: 2,
+        totalPages: 3,
+      });
+    });
+
+    it('상태(status)로 필터링할 수 있다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // DRAFT 코스 2개 생성
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-course-1',
+          title: 'Draft 코스 1',
+          description: 'Draft 설명',
+          status: CourseStatus.DRAFT,
+        })
+        .expect(HttpStatus.CREATED);
+
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-course-2',
+          title: 'Draft 코스 2',
+          description: 'Draft 설명',
+          status: CourseStatus.DRAFT,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // OPEN 코스 1개 생성
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'open-course',
+          title: 'Open 코스',
+          description: 'Open 설명',
+          status: CourseStatus.OPEN,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when - DRAFT 상태만 필터링
+      const response = await request(app.getHttpServer())
+        .get(`/courses?status=${CourseStatus.DRAFT}`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.items).toHaveLength(2);
+      expect(response.body.data.pagination.totalCount).toBe(2);
+      response.body.data.items.forEach((item: any) => {
+        expect(item.status).toBe(CourseStatus.DRAFT);
+      });
+    });
+
+    it('난이도(level)로 필터링할 수 있다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // BEGINNER 코스 생성
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'beginner-course',
+          title: 'Beginner 코스',
+          description: 'Beginner 설명',
+          level: CourseLevel.BEGINNER,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // INTERMEDIATE 코스 생성
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'intermediate-course',
+          title: 'Intermediate 코스',
+          description: 'Intermediate 설명',
+          level: CourseLevel.INTERMEDIATE,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when - INTERMEDIATE 레벨만 필터링
+      const response = await request(app.getHttpServer())
+        .get(`/courses?level=${CourseLevel.INTERMEDIATE}`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.items).toHaveLength(1);
+      expect(response.body.data.items[0].level).toBe(CourseLevel.INTERMEDIATE);
+    });
+
+    it('상태와 난이도를 동시에 필터링할 수 있다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // DRAFT + BEGINNER 코스
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-beginner',
+          title: 'Draft Beginner 코스',
+          description: 'Draft Beginner 설명',
+          status: CourseStatus.DRAFT,
+          level: CourseLevel.BEGINNER,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // OPEN + BEGINNER 코스
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'open-beginner',
+          title: 'Open Beginner 코스',
+          description: 'Open Beginner 설명',
+          status: CourseStatus.OPEN,
+          level: CourseLevel.BEGINNER,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // DRAFT + INTERMEDIATE 코스
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-intermediate',
+          title: 'Draft Intermediate 코스',
+          description: 'Draft Intermediate 설명',
+          status: CourseStatus.DRAFT,
+          level: CourseLevel.INTERMEDIATE,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when - DRAFT 상태 + BEGINNER 레벨 필터링
+      const response = await request(app.getHttpServer())
+        .get(`/courses?status=${CourseStatus.DRAFT}&level=${CourseLevel.BEGINNER}`)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.items).toHaveLength(1);
+      expect(response.body.data.items[0].status).toBe(CourseStatus.DRAFT);
+      expect(response.body.data.items[0].level).toBe(CourseLevel.BEGINNER);
+    });
+
+    it('코스가 없을 때 빈 배열을 반환한다', async () => {
+      // when
+      const response = await request(app.getHttpServer()).get('/courses').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.items).toEqual([]);
+      expect(response.body.data.pagination.totalCount).toBe(0);
+    });
+
+    it('최신 코스가 먼저 조회된다 (createdAt desc)', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 3개의 코스를 순차적으로 생성
+      const course1 = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'first-course',
+          title: '첫 번째 코스',
+          description: '첫 번째 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const course2 = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'second-course',
+          title: '두 번째 코스',
+          description: '두 번째 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const course3 = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'third-course',
+          title: '세 번째 코스',
+          description: '세 번째 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses').expect(HttpStatus.OK);
+
+      // then - 최신 순서 (3 -> 2 -> 1)
+      expect(response.body.data.items[0].id).toBe(course3.body.data.id);
+      expect(response.body.data.items[1].id).toBe(course2.body.data.id);
+      expect(response.body.data.items[2].id).toBe(course1.body.data.id);
+    });
+
+    it('잘못된 페이지 번호(0 이하)로 요청 시 400 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/courses?page=0').expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('잘못된 페이지 크기(0 이하)로 요청 시 400 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/courses?pageSize=0').expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('유효하지 않은 status 값으로 요청 시 400 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/courses?status=INVALID_STATUS').expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('유효하지 않은 level 값으로 요청 시 400 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/courses?level=INVALID_LEVEL').expect(HttpStatus.BAD_REQUEST);
+    });
+  });
 });
