@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { GlobalExceptionFilter, setupSwagger } from './api/support';
+import { createAppLogger, GlobalExceptionFilter, setupSwagger } from './api/support';
 import { AppModule } from './modules/app.module';
 
 function setupGlobalPipes(app: INestApplication) {
@@ -30,7 +30,9 @@ function setupCors(app: INestApplication) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: createAppLogger(),
+  });
 
   setupGlobalPipes(app);
   setupGlobalFilters(app);
