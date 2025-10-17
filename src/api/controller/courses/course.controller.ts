@@ -1,21 +1,64 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AdminGuard } from '@/api/controller/auth/admin.guard';
 import { CurrentUser, type CurrentUserPayload } from '@/api/controller/auth/current-user.decorator';
-import { createSuccessResponse, type SuccessResponse } from '@/api/support/response';
+import {
+  createPaginatedResponse,
+  createSuccessResponse,
+  type PaginatedResponse,
+  type SuccessResponse,
+} from '@/api/support/response';
 
+import { CourseFilter } from '@/domain/courses/course.repository';
 import { CourseService } from '@/domain/courses/course.service';
 import { NewCourse } from '@/domain/courses/new-course';
 import { UpdateCourse } from '@/domain/courses/update-course';
 
-import { CreateCourseRequest, UpdateCourseRequest } from './course.request';
+import { CreateCourseRequest, GetCoursesRequest, UpdateCourseRequest } from './course.request';
 import { CourseResponse } from './course.response';
 
 @ApiTags('courses')
 @Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '코스 목록 조회' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '코스 목록 조회 성공',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '잘못된 요청 파라미터',
+  })
+  async getCourses(@Query() query: GetCoursesRequest): Promise<PaginatedResponse<CourseResponse>> {
+    const filter: CourseFilter = {
+      status: query.status,
+      level: query.level,
+    };
+
+    const { courses, totalCount } = await this.courseService.getCourses(query.page!, query.pageSize!, filter);
+
+    const courseResponses = courses.map(
+      (course) =>
+        new CourseResponse(
+          course.id,
+          course.slug,
+          course.title,
+          course.description,
+          course.thumbnailUrl,
+          course.price,
+          course.level,
+          course.status,
+          course.createdAt,
+        ),
+    );
+
+    return createPaginatedResponse(courseResponses, totalCount, query.page!, query.pageSize!);
+  }
 
   @Post()
   @UseGuards(AdminGuard)

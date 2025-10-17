@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { Course } from './course';
-import { COURSE_REPOSITORY, type ICourseRepository } from './course.repository';
+import { COURSE_REPOSITORY, CourseFilter, CourseListResult, type ICourseRepository } from './course.repository';
 import { NewCourse } from './new-course';
 import { UpdateCourse } from './update-course';
 
@@ -41,5 +41,9 @@ export class CourseService {
     }
 
     return await this.courseRepository.update(updateCourse);
+  }
+
+  async getCourses(page: number, pageSize: number, filter?: CourseFilter): Promise<CourseListResult> {
+    return await this.courseRepository.findAll(page, pageSize, filter);
   }
 }
