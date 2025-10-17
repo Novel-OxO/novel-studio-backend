@@ -56,4 +56,15 @@ export class CourseService {
 
     return course;
   }
+
+  async deleteCourse(id: string): Promise<void> {
+    // 코스 존재 여부 확인
+    const existingCourse = await this.courseRepository.findById(id);
+
+    if (!existingCourse) {
+      throw new NotFoundException('코스를 찾을 수 없습니다.');
+    }
+
+    await this.courseRepository.delete(id);
+  }
 }

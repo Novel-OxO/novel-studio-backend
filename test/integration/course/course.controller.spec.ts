@@ -1061,4 +1061,193 @@ describe('CourseController (Integration)', () => {
       expect(response.body.data.status).toBe(CourseStatus.DRAFT);
     });
   });
+
+  describe('DELETE /courses/:id', () => {
+    it('관리자가 유효한 ID로 코스 삭제 시 204 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      await request(app.getHttpServer())
+        .delete(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // then - 삭제된 코스는 조회되지 않아야 함
+      await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('삭제된 코스는 목록 조회에도 포함되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 2개 생성
+      const course1 = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'course-1',
+          title: '코스 1',
+          description: '설명 1',
+        })
+        .expect(HttpStatus.CREATED);
+
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'course-2',
+          title: '코스 2',
+          description: '설명 2',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when - 첫 번째 코스 삭제
+      await request(app.getHttpServer())
+        .delete(`/courses/${course1.body.data.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // then - 목록 조회 시 1개만 나와야 함
+      const listResponse = await request(app.getHttpServer()).get('/courses').expect(HttpStatus.OK);
+
+      expect(listResponse.body.data.items).toHaveLength(1);
+      expect(listResponse.body.data.pagination.totalCount).toBe(1);
+      expect(listResponse.body.data.items[0].slug).toBe('course-2');
+    });
+
+    it('존재하지 않는 ID로 삭제 시도 시 404 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+
+      // when & then
+      await request(app.getHttpServer())
+        .delete(`/courses/${nonExistentId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('이미 삭제된 코스를 다시 삭제하려고 하면 404 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 첫 번째 삭제
+      await request(app.getHttpServer())
+        .delete(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // when & then - 두 번째 삭제 시도
+      await request(app.getHttpServer())
+        .delete(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('일반 사용자가 코스 삭제 시도 시 403 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken: adminToken } = await createAdminUserAndLogin();
+
+      // 관리자로 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 일반 사용자로 로그인
+      const userToken = await createUserAndLogin();
+
+      // when & then
+      await request(app.getHttpServer())
+        .delete(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(HttpStatus.FORBIDDEN);
+    });
+
+    it('토큰 없이 코스 삭제 시도 시 401 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when & then
+      await request(app.getHttpServer()).delete(`/courses/${courseId}`).expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('삭제된 코스의 데이터베이스 deletedAt이 설정된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      await request(app.getHttpServer())
+        .delete(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // then - 데이터베이스에서 직접 확인
+      const prisma = TestHelper.getPrisma();
+      const deletedCourse = await prisma.course.findUnique({
+        where: { id: courseId },
+      });
+
+      expect(deletedCourse).not.toBeNull();
+      expect(deletedCourse!.deletedAt).not.toBeNull();
+      expect(deletedCourse!.deletedAt).toBeInstanceOf(Date);
+    });
+  });
 });

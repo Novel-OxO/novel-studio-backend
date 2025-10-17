@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AdminGuard } from '@/api/controller/auth/admin.guard';
@@ -211,5 +223,30 @@ export class CourseController {
     );
 
     return createSuccessResponse(response);
+  }
+
+  @Delete(':id')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '코스 삭제 (관리자 전용)' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: '코스 삭제 성공',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '인증되지 않은 사용자',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: '관리자 권한이 필요합니다',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '코스를 찾을 수 없습니다',
+  })
+  async deleteCourse(@Param('id') id: string): Promise<void> {
+    await this.courseService.deleteCourse(id);
   }
 }
