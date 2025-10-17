@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: novel-studio-postgres-test
+    restart: unless-stopped
+    ports:
+      - '5433:5432' # 개발 DB와 포트 분리
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: novel_studio_test
+      TZ: Asia/Seoul
+    # tmpfs를 사용하여 메모리에 데이터 저장 (테스트 속도 향상)
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test_user -d novel_studio_test']
+      interval: 5s
+      timeout: 3s
+      retries: 5

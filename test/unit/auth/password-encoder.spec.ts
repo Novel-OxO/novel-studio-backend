@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { PasswordEncoder } from '../../../src/domain/auth/password-encoder';
+import { PasswordEncoder } from '@/domain/auth/password-encoder';
 
 describe('PasswordEncoder', () => {
   let passwordEncoder: PasswordEncoder;

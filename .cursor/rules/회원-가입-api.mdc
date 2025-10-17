@@ -1,0 +1,151 @@
+---
+alwaysApply: false
+---
+
+# 회원 가입 API 문서
+
+## 개요
+
+이메일, 비밀번호, 닉네임을 입력받아 새로운 사용자를 등록하는 API입니다.
+
+## API 스펙
+
+### Endpoint
+
+```
+POST /api/auth/signup
+```
+
+### Request Body
+
+```typescript
+{
+  email: string; // 이메일 (필수, 유효한 이메일 형식, 고유값)
+  password: string; // 비밀번호 (필수, 최소 8자 이상, 영문+숫자+특수문자 조합 권장)
+  nickname: string; // 닉네임 (필수, 2-20자)
+}
+```
+
+#### 요청 예시
+
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "nickname": "홍길동"
+}
+```
+
+### Response
+
+#### 성공 (201 Created)
+
+- 응답 없음
+
+#### 실패 응답
+
+##### 이메일 중복 (409 Conflict)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "EMAIL_ALREADY_EXISTS",
+    "message": "이미 사용 중인 이메일입니다."
+  }
+}
+```
+
+##### 유효성 검증 실패 (400 Bad Request)
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "입력값이 올바르지 않습니다.",
+    "details": [
+      {
+        "field": "email",
+        "message": "유효한 이메일 형식이 아닙니다."
+      },
+      {
+        "field": "password",
+        "message": "비밀번호는 최소 8자 이상이어야 합니다."
+      },
+      {
+        "field": "nickname",
+        "message": "닉네임은 2-20자 사이여야 합니다."
+      }
+    ]
+  }
+}
+```
+
+## 구현 요구사항
+
+### 1. Validation Rules
+
+- **이메일**
+  - 필수 입력
+  - 유효한 이메일 형식
+  - 중복 불가 (DB 유니크 제약)
+- **비밀번호**
+  - 필수 입력
+  - 최소 8자 이상
+  - bcrypt로 해싱하여 저장 (saltRounds: 10)
+- **닉네임**
+  - 필수 입력
+  - 2-20자 제한
+
+### 2. 비밀번호 해싱
+
+```typescript
+import * as bcrypt from 'bcrypt';
+
+const saltRounds = 10;
+const hashedPassword = await bcrypt.hash(password, saltRounds);
+```
+
+### 3. 에러 처리
+
+- 이메일 중복: `409 Conflict`
+- 유효성 검증 실패: `400 Bad Request`
+- 서버 내부 오류: `500 Internal Server Error`
+
+## 구현 체크리스트
+
+### DTO (Data Transfer Object)
+
+- [ ] `SignupRequestDto` 생성
+  - [ ] email, password, nickname 필드
+  - [ ] class-validator 데코레이터 적용
+- [ ] `SignupResponseDto` 생성
+
+### Service Layer
+
+- [ ] `AuthService` 생성
+  - [ ] `signup()` 메서드 구현
+  - [ ] 이메일 중복 체크
+  - [ ] 비밀번호 해싱
+  - [ ] Prisma를 통한 사용자 생성
+
+### Controller Layer
+
+- [ ] `AuthController` 생성
+  - [ ] `POST /api/auth/signup` 엔드포인트
+  - [ ] DTO 바인딩 및 검증
+  - [ ] 응답 포맷팅
+
+## 보안 고려사항
+
+1. 비밀번호는 반드시 해싱하여 저장 (평문 저장 금지)
+2. 비밀번호는 응답에 절대 포함하지 않음
+
+## 향후 확장 가능 기능
+
+- 이메일 인증
+- 소셜 로그인 (Google, Kakao 등)
+- 닉네임 중복 체크
+- 프로필 이미지 업로드
+- 휴대폰 번호 인증
