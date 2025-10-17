@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AdminGuard } from '@/api/controller/auth/admin.guard';
@@ -7,8 +7,9 @@ import { createSuccessResponse, type SuccessResponse } from '@/api/support/respo
 
 import { CourseService } from '@/domain/courses/course.service';
 import { NewCourse } from '@/domain/courses/new-course';
+import { UpdateCourse } from '@/domain/courses/update-course';
 
-import { CreateCourseRequest } from './course.request';
+import { CreateCourseRequest, UpdateCourseRequest } from './course.request';
 import { CourseResponse } from './course.response';
 
 @ApiTags('courses')
@@ -54,6 +55,67 @@ export class CourseController {
     });
 
     const course = await this.courseService.createCourse(newCourse);
+
+    const response = new CourseResponse(
+      course.id,
+      course.slug,
+      course.title,
+      course.description,
+      course.thumbnailUrl,
+      course.price,
+      course.level,
+      course.status,
+      course.createdAt,
+    );
+
+    return createSuccessResponse(response);
+  }
+
+  @Patch(':id')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '코스 수정 (관리자 전용)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '코스 수정 성공',
+    type: CourseResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '인증되지 않은 사용자',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: '관리자 권한이 필요합니다',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '코스를 찾을 수 없습니다',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: '이미 사용 중인 slug',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: '잘못된 요청 데이터',
+  })
+  async updateCourse(
+    @Param('id') id: string,
+    @Body() request: UpdateCourseRequest,
+  ): Promise<SuccessResponse<CourseResponse>> {
+    const updateCourse = new UpdateCourse(id, {
+      slug: request.slug,
+      title: request.title,
+      description: request.description,
+      thumbnailUrl: request.thumbnailUrl,
+      price: request.price,
+      level: request.level,
+      status: request.status,
+    });
+
+    const course = await this.courseService.updateCourse(updateCourse);
 
     const response = new CourseResponse(
       course.id,
