@@ -991,7 +991,7 @@ describe('CourseController (Integration)', () => {
           description: '완전한 설명',
           thumbnailUrl: 'https://example.com/thumb.jpg',
           price: 99000,
-          level: CourseLevel.ADVANCED,
+          level: CourseLevel.BASIC,
           status: CourseStatus.OPEN,
         })
         .expect(HttpStatus.CREATED);
