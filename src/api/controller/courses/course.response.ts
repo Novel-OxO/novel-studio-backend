@@ -2,6 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { CourseLevel, CourseStatus } from '@prisma/client';
 
+import { LectureResponse } from '@/api/controller/lectures/lecture.response';
+import { SectionResponse } from '@/api/controller/sections/section.response';
+
 export class CourseResponse {
   @ApiProperty({
     description: '코스 ID',
@@ -60,6 +63,20 @@ export class CourseResponse {
   })
   createdAt: Date;
 
+  @ApiProperty({
+    description: '섹션 목록',
+    type: [SectionResponse],
+    required: false,
+  })
+  sections?: SectionResponse[];
+
+  @ApiProperty({
+    description: '강의 목록',
+    type: [LectureResponse],
+    required: false,
+  })
+  lectures?: LectureResponse[];
+
   constructor(
     id: string,
     slug: string,
@@ -70,6 +87,8 @@ export class CourseResponse {
     level: CourseLevel,
     status: CourseStatus,
     createdAt: Date,
+    sections?: SectionResponse[],
+    lectures?: LectureResponse[],
   ) {
     this.id = id;
     this.slug = slug;
@@ -80,5 +99,7 @@ export class CourseResponse {
     this.level = level;
     this.status = status;
     this.createdAt = createdAt;
+    this.sections = sections;
+    this.lectures = lectures;
   }
 }

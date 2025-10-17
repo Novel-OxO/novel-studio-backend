@@ -1,7 +1,13 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { Course } from './course';
-import { COURSE_REPOSITORY, CourseFilter, CourseListResult, type ICourseRepository } from './course.repository';
+import {
+  COURSE_REPOSITORY,
+  CourseFilter,
+  CourseIncludeOptions,
+  CourseListResult,
+  type ICourseRepository,
+} from './course.repository';
 import { NewCourse } from './new-course';
 import { UpdateCourse } from './update-course';
 
@@ -47,8 +53,8 @@ export class CourseService {
     return await this.courseRepository.findAll(page, pageSize, filter);
   }
 
-  async getCourseById(id: string): Promise<Course> {
-    const course = await this.courseRepository.findById(id);
+  async getCourseById(id: string, options?: CourseIncludeOptions): Promise<Course> {
+    const course = await this.courseRepository.findById(id, options);
 
     if (!course) {
       throw new NotFoundException('코스를 찾을 수 없습니다.');
