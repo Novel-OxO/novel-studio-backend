@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Course } from '@/domain/courses/course';
 import { ICourseRepository } from '@/domain/courses/course.repository';
 import { NewCourse } from '@/domain/courses/new-course';
+import { UpdateCourse } from '@/domain/courses/update-course';
 import { User, UserRole } from '@/domain/users/user';
 
 import { PrismaService } from './prisma.service';
@@ -143,6 +144,53 @@ export class PrismaCourseRepository implements ICourseRepository {
       course.createdAt,
       course.updatedAt,
       course.deletedAt,
+    );
+  }
+
+  async update(course: UpdateCourse): Promise<Course> {
+    const updatedCourse = await this.prisma.course.update({
+      where: {
+        id: course.id,
+      },
+      data: {
+        slug: course.slug,
+        title: course.title,
+        description: course.description,
+        thumbnailUrl: course.thumbnailUrl,
+        price: course.price,
+        level: course.level,
+        status: course.status,
+      },
+      include: {
+        instructor: true,
+      },
+    });
+
+    const instructor = new User(
+      updatedCourse.instructor.id,
+      updatedCourse.instructor.email,
+      updatedCourse.instructor.hashedPassword,
+      updatedCourse.instructor.nickname,
+      updatedCourse.instructor.profileImageUrl,
+      updatedCourse.instructor.role as UserRole,
+      updatedCourse.instructor.createdAt,
+      updatedCourse.instructor.updatedAt,
+      updatedCourse.instructor.deletedAt,
+    );
+
+    return new Course(
+      updatedCourse.id,
+      updatedCourse.slug,
+      updatedCourse.title,
+      updatedCourse.description,
+      instructor,
+      updatedCourse.thumbnailUrl,
+      updatedCourse.price,
+      updatedCourse.level,
+      updatedCourse.status,
+      updatedCourse.createdAt,
+      updatedCourse.updatedAt,
+      updatedCourse.deletedAt,
     );
   }
 }

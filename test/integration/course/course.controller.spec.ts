@@ -305,4 +305,319 @@ describe('CourseController (Integration)', () => {
       expect(course!.instructorId).toBe(adminId);
     });
   });
+
+  describe('PATCH /courses/:id', () => {
+    it('관리자가 유효한 데이터로 코스 수정 시 200 상태코드와 수정된 코스 정보를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'original-course',
+          title: '원본 코스',
+          description: '원본 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      const updateRequest = {
+        title: '수정된 코스',
+        description: '수정된 설명',
+        price: 30000,
+        level: CourseLevel.INTERMEDIATE,
+      };
+
+      // when
+      const response = await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updateRequest)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.data).toMatchObject({
+        id: courseId,
+        slug: 'original-course', // slug는 변경하지 않음
+        title: updateRequest.title,
+        description: updateRequest.description,
+        price: updateRequest.price,
+        level: updateRequest.level,
+      });
+    });
+
+    it('관리자가 slug를 포함하여 코스 수정 시 slug도 변경된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'original-slug',
+          title: '원본 코스',
+          description: '원본 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      const updateRequest = {
+        slug: 'updated-slug',
+        title: '수정된 코스',
+      };
+
+      // when
+      const response = await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updateRequest)
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.slug).toBe('updated-slug');
+      expect(response.body.data.title).toBe('수정된 코스');
+    });
+
+    it('존재하지 않는 코스 ID로 수정 시도 시 404 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+
+      const updateRequest = {
+        title: '수정된 코스',
+      };
+
+      // when & then
+      await request(app.getHttpServer())
+        .patch(`/courses/${nonExistentId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updateRequest)
+        .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('중복된 slug로 수정 시도 시 409 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 첫 번째 코스 생성
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'existing-course',
+          title: '기존 코스',
+          description: '기존 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // 두 번째 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'course-to-update',
+          title: '수정할 코스',
+          description: '수정할 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when & then - 이미 존재하는 slug로 수정 시도
+      await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'existing-course',
+        })
+        .expect(HttpStatus.CONFLICT);
+    });
+
+    it('일반 사용자가 코스 수정 시도 시 403 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken: adminToken } = await createAdminUserAndLogin();
+
+      // 관리자로 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 일반 사용자로 로그인
+      const userToken = await createUserAndLogin();
+
+      // when & then
+      await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          title: '수정 시도',
+        })
+        .expect(HttpStatus.FORBIDDEN);
+    });
+
+    it('토큰 없이 코스 수정 시도 시 401 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when & then
+      await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .send({
+          title: '수정 시도',
+        })
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('유효하지 않은 level 값으로 수정 시도 시 400 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when & then
+      await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          level: 'INVALID_LEVEL',
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('음수 가격으로 수정 시도 시 400 상태코드를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when & then
+      await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          price: -5000,
+        })
+        .expect(HttpStatus.BAD_REQUEST);
+    });
+
+    it('부분 수정(일부 필드만 전송)이 정상 동작한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'original-course',
+          title: '원본 코스',
+          description: '원본 설명',
+          price: 10000,
+          level: CourseLevel.BEGINNER,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+      const originalData = createResponse.body.data;
+
+      // when - 제목만 수정
+      const response = await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          title: '수정된 제목만',
+        })
+        .expect(HttpStatus.OK);
+
+      // then - 제목만 변경되고 나머지는 유지
+      expect(response.body.data).toMatchObject({
+        id: courseId,
+        slug: originalData.slug,
+        title: '수정된 제목만',
+        description: originalData.description,
+        price: originalData.price,
+        level: originalData.level,
+      });
+    });
+
+    it('thumbnailUrl을 null로 수정할 수 있다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성 (썸네일 포함)
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+          thumbnailUrl: 'https://example.com/thumbnail.jpg',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when - thumbnailUrl을 명시적으로 null로 설정
+      const response = await request(app.getHttpServer())
+        .patch(`/courses/${courseId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          thumbnailUrl: null,
+        })
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.thumbnailUrl).toBeNull();
+    });
+  });
 });
