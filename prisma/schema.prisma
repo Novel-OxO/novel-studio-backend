@@ -58,4 +58,19 @@ model Course {
 
   @@index([slug])
   @@map("courses")
+  sections Section[]
+}
+
+model Section {
+  id          String   @id @default(uuid())
+  title       String
+  order       Int
+  courseId    String   @map("course_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at") // Soft Delete Column
+
+  course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("sections")
 }
