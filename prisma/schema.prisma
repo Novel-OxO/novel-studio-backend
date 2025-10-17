@@ -56,21 +56,44 @@ model Course {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at") // Soft Delete Column
 
+  sections Section[]
+  lectures Lecture[]
+
   @@index([slug])
   @@map("courses")
-  sections Section[]
 }
 
 model Section {
-  id          String   @id @default(uuid())
-  title       String
-  order       Int
-  courseId    String   @map("course_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at") // Soft Delete Column
+  id        String    @id @default(uuid())
+  title     String
+  order     Int
+  courseId  String    @map("course_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // Soft Delete Column
 
   course   Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lectures Lecture[]
 
   @@map("sections")
+}
+
+model Lecture {
+  id               String    @id @default(uuid())
+  title            String
+  description      String?
+  order            Int
+  duration         Int?
+  isPreview        Boolean   @default(false) @map("is_preview")
+  sectionId        String    @map("section_id")
+  courseId         String    @map("course_id")
+  videoStorageInfo Json?     @map("video_storage_info")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at") // Soft Delete Column
+
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("lectures")
 }
