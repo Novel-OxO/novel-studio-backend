@@ -1,0 +1,97 @@
+---
+alwaysApply: true
+---
+
+# 프로젝트 스크립트 가이드
+
+## 개발 환경 실행
+
+- `npm run start:dev` - 개발 서버 실행 (hot reload, .env.dev 사용)
+- `npm run start:debug` - 디버그 모드로 개발 서버 실행
+- `npm run start:prod` - 프로덕션 모드로 서버 실행
+
+## 빌드
+
+- `npm run build` - TypeScript 코드를 빌드하여 dist 폴더에 생성
+
+## 코드 품질
+
+- `npm run lint` - ESLint로 코드 검사 및 자동 수정
+- `npm run format` - Prettier로 코드 포맷팅
+
+## 테스트
+
+### 기본 테스트
+
+- `npm run test:unit` - 단위 테스트만 실행
+- `npm run test:integration` - 통합 테스트만 실행 (.env.test 사용)
+
+### Watch 모드 (개발 중 자동 재실행)
+
+- `npm run test:watch:unit` - 단위 테스트를 watch 모드로 실행
+- `npm run test:watch:integration` - 통합 테스트를 watch 모드로 실행
+
+### 커버리지
+
+- `npm run test:cov:unit` - 단위 테스트 커버리지 리포트 생성
+- `npm run test:cov:integration` - 통합 테스트 커버리지 리포트 생성
+
+### 디버깅
+
+- `npm run test:debug` - 테스트를 디버그 모드로 실행
+
+## Docker (테스트 환경)
+
+- `npm run docker:test:up` - 테스트용 Docker 컨테이너 시작 (PostgreSQL 등)
+- `npm run docker:test:down` - 테스트용 Docker 컨테이너 종료
+- `npm run docker:test:logs` - Docker 컨테이너 로그 확인
+
+## Prisma (데이터베이스)
+
+- `npm run prisma:generate` - Prisma Client 생성/업데이트
+- `npm run prisma:migrate` - 새로운 마이그레이션 생성 및 적용 (.env.dev)
+- `npm run prisma:migrate:reset` - 데이터베이스 초기화 및 재마이그레이션
+- `npm run prisma:migrate:test` - 테스트 DB에 마이그레이션 적용 (.env.test)
+- `npm run prisma:studio` - Prisma Studio (GUI DB 관리 도구) 실행
+
+## 일반적인 개발 워크플로우
+
+### 초기 설정
+
+```bash
+npm install
+npm run docker:test:up
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+### 일상적인 개발
+
+```bash
+npm run start:dev  # 터미널 1: 서버 실행
+npm run test:watch:unit  # 터미널 2 (선택): 테스트 watch
+```
+
+### 데이터베이스 스키마 변경
+
+```bash
+# 1. prisma/schema.prisma 수정
+# 2. 마이그레이션 생성 및 적용
+npm run prisma:migrate
+# 3. 테스트 DB에도 적용
+npm run prisma:migrate:test
+```
+
+### 커밋 전 체크리스트
+
+```bash
+npm run lint  # 코드 검사
+npm run format  # 코드 포맷팅
+npm run test:unit  # 단위 테스트
+npm run test:integration  # 통합 테스트
+```
+
+## 환경 변수 파일
+
+- `.env.dev` - 개발 환경 설정
+- `.env.test` - 테스트 환경 설정 (통합 테스트 및 테스트 DB 마이그레이션에 사용)
