@@ -1,13 +1,15 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { createSuccessResponse, SuccessResponse } from '@/api/support/response';
+import { createSuccessResponse, type SuccessResponse } from '@/api/support/response';
 
 import { AuthService } from '@/domain/auth/auth.service';
 import { UseCredential } from '@/domain/auth/use-credentail';
 
+import { AccessTokenGuard } from './access-token.guard';
 import { SignInRequest } from './auth.request';
 import { SignInResponse } from './auth.response';
+import { CurrentUser, type CurrentUserPayload } from './current-user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -36,5 +38,22 @@ export class AuthController {
     const response = new SignInResponse(token.accessToken, token.refreshToken);
 
     return createSuccessResponse(response);
+  }
+
+  @Get('me')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '현재 로그인한 사용자 정보 조회' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '사용자 정보 조회 성공',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '인증되지 않은 사용자',
+  })
+  getMe(@CurrentUser() user: CurrentUserPayload): SuccessResponse<CurrentUserPayload> {
+    return createSuccessResponse(user);
   }
 }
