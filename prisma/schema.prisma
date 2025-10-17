@@ -12,6 +12,17 @@ enum UserRole {
   ADMIN
 }
 
+enum CourseLevel {
+  BEGINNER // 입문
+  BASIC // 초급
+  INTERMEDIATE // 중급
+}
+
+enum CourseStatus {
+  DRAFT
+  OPEN
+}
+
 model User {
   id              String   @id @default(cuid())
   nickname        String   @map("nickname")
@@ -26,4 +37,22 @@ model User {
 
   @@index([email])
   @@map("users")
+}
+
+model Course {
+  id           String       @id @default(uuid())
+  slug         String       @unique
+  title        String
+  description  String       @map("description")
+  thumbnailUrl String?      @map("thumbnail_url")
+  price        Int          @default(0)
+  level        CourseLevel  @default(BEGINNER)
+  status       CourseStatus @default(DRAFT)
+  instructorId String       @map("instructor_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at") // Soft Delete Column
+
+  @@index([slug])
+  @@map("courses")
 }
