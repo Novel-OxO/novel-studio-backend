@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -31,6 +31,31 @@ export class AddUserRequest {
   @MinLength(2, { message: '닉네임은 2자 이상이어야 합니다.' })
   @MaxLength(20, { message: '닉네임은 20자 이하여야 합니다.' })
   nickname: string;
+}
+
+export class UpdateUserRequest {
+  @ApiProperty({
+    description: '사용자 닉네임 (2-20자)',
+    example: '새닉네임',
+    minLength: 2,
+    maxLength: 20,
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: '닉네임은 문자열이어야 합니다.' })
+  @MinLength(2, { message: '닉네임은 2자 이상이어야 합니다.' })
+  @MaxLength(20, { message: '닉네임은 20자 이하여야 합니다.' })
+  nickname?: string;
+
+  @ApiProperty({
+    description: '프로필 이미지 URL',
+    example: 'https://example.com/new-profile.jpg',
+    nullable: true,
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: '프로필 이미지 URL은 문자열이어야 합니다.' })
+  profileImageUrl?: string | null;
 }
 
 export class UserResponse {

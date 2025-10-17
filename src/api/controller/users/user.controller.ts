@@ -1,12 +1,15 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { createSuccessResponse, SuccessResponse } from '@/api/support/response';
+import { AccessTokenGuard } from '@/api/controller/auth/access-token.guard';
+import { CurrentUser, type CurrentUserPayload } from '@/api/controller/auth/current-user.decorator';
+import { createSuccessResponse, type SuccessResponse } from '@/api/support/response';
 
 import { NewUser } from '@/domain/users/new-user';
+import { UpdateUser } from '@/domain/users/update-user';
 import { UserService } from '@/domain/users/user.service';
 
-import { AddUserRequest, UserResponse } from './user.request';
+import { AddUserRequest, UpdateUserRequest, UserResponse } from './user.request';
 
 @ApiTags('users')
 @Controller('users')
@@ -31,6 +34,44 @@ export class UserController {
   })
   async createUser(@Body() request: AddUserRequest): Promise<SuccessResponse<UserResponse>> {
     const user = await this.userService.createUser(new NewUser(request.email, request.password, request.nickname));
+
+    const response = new UserResponse(
+      user.id,
+      user.email,
+      user.nickname,
+      user.profileImageUrl,
+      user.role,
+      user.createdAt,
+    );
+
+    return createSuccessResponse(response);
+  }
+
+  @Patch()
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '내 정보 수정' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '정보 수정 성공',
+    type: UserResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '인증되지 않은 사용자',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '사용자를 찾을 수 없습니다',
+  })
+  async updateMe(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body() request: UpdateUserRequest,
+  ): Promise<SuccessResponse<UserResponse>> {
+    const updateUser = new UpdateUser(request.nickname, request.profileImageUrl);
+
+    const user = await this.userService.updateUser(currentUser.userId, updateUser);
 
     const response = new UserResponse(
       user.id,

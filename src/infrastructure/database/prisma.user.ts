@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { NewUser } from '@/domain/users/new-user';
+import { UpdateUser } from '@/domain/users/update-user';
 import { User, UserRole } from '@/domain/users/user';
 import { IUserRepository } from '@/domain/users/user.repository';
 
@@ -32,6 +33,28 @@ export class PrismaUserRepository implements IUserRepository {
     );
   }
 
+  async findById(id: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return new User(
+      user.id,
+      user.email,
+      user.hashedPassword,
+      user.nickname,
+      user.profileImageUrl,
+      user.role as UserRole,
+      user.createdAt,
+      user.updatedAt,
+      user.deletedAt,
+    );
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -51,6 +74,28 @@ export class PrismaUserRepository implements IUserRepository {
       user.createdAt,
       user.updatedAt,
       user.deletedAt,
+    );
+  }
+
+  async update(id: string, updateUser: UpdateUser): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(updateUser.nickname && { nickname: updateUser.nickname }),
+        ...(updateUser.profileImageUrl !== undefined && { profileImageUrl: updateUser.profileImageUrl }),
+      },
+    });
+
+    return new User(
+      updatedUser.id,
+      updatedUser.email,
+      updatedUser.hashedPassword,
+      updatedUser.nickname,
+      updatedUser.profileImageUrl,
+      updatedUser.role as UserRole,
+      updatedUser.createdAt,
+      updatedUser.updatedAt,
+      updatedUser.deletedAt,
     );
   }
 }
