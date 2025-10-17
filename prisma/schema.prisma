@@ -15,7 +15,7 @@ enum UserRole {
 model User {
   id              String   @id @default(cuid())
   nickname        String   @map("nickname")
-  email           String   @unique
+  email           String
   hashedPassword  String   @map("hashed_password")
   profileImageUrl String?  @map("profile_image_url")
   role            UserRole @default(USER)
@@ -24,5 +24,6 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // Soft Delete Column
 
+  @@index([email])
   @@map("users")
 }

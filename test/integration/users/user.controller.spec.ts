@@ -80,7 +80,7 @@ describe('UserController (Integration)', () => {
 
       // then - 데이터베이스에서 사용자 확인
       const prisma = TestHelper.getPrisma();
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.findFirst({
         where: { email: createUserRequest.email },
       });
 
@@ -199,6 +199,125 @@ describe('UserController (Integration)', () => {
 
       // then
       expect(response.body.data.profileImageUrl).toBeNull();
+    });
+  });
+
+  describe('DELETE /users', () => {
+    const createUserAndLogin = async (email: string, password: string, nickname: string) => {
+      await request(app.getHttpServer()).post('/users').send({ email, password, nickname }).expect(HttpStatus.CREATED);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email, password })
+        .expect(HttpStatus.OK);
+
+      return loginResponse.body.data.accessToken;
+    };
+
+    it('유효한 토큰으로 회원 탈퇴 시 204 상태코드를 반환한다', async () => {
+      // given
+      const accessToken = await createUserAndLogin('test@example.com', 'SecurePassword123!', '테스트유저');
+
+      // when & then
+      await request(app.getHttpServer())
+        .delete('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+    });
+
+    it('회원 탈퇴 후 로그인을 시도하면 401 상태코드를 반환한다', async () => {
+      // given
+      const email = 'test@example.com';
+      const password = 'SecurePassword123!';
+      const accessToken = await createUserAndLogin(email, password, '테스트유저');
+
+      // 회원 탈퇴
+      await request(app.getHttpServer())
+        .delete('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // when & then - 로그인 시도
+      await request(app.getHttpServer()).post('/auth/signin').send({ email, password }).expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('회원 탈퇴 후 정보 수정을 시도하면 404 상태코드를 반환한다', async () => {
+      // given
+      const accessToken = await createUserAndLogin('test@example.com', 'SecurePassword123!', '테스트유저');
+
+      // 회원 탈퇴
+      await request(app.getHttpServer())
+        .delete('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // when & then - 정보 수정 시도
+      await request(app.getHttpServer())
+        .patch('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ nickname: '새닉네임' })
+        .expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('탈퇴된 이메일로 재가입할 수 있다', async () => {
+      // given
+      const email = 'test@example.com';
+      const password = 'SecurePassword123!';
+      const accessToken = await createUserAndLogin(email, password, '원래유저');
+
+      // 회원 탈퇴
+      await request(app.getHttpServer())
+        .delete('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // when - 동일한 이메일로 재가입
+      const response = await request(app.getHttpServer())
+        .post('/users')
+        .send({
+          email,
+          password: 'NewPassword123!',
+          nickname: '새유저',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(email);
+      expect(response.body.data.nickname).toBe('새유저');
+
+      // 새로운 계정으로 로그인 가능
+      await request(app.getHttpServer())
+        .post('/auth/signin')
+        .send({ email, password: 'NewPassword123!' })
+        .expect(HttpStatus.OK);
+    });
+
+    it('토큰 없이 요청 시 401 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).delete('/users').expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('회원 탈퇴 후 데이터베이스에 deletedAt이 설정된다', async () => {
+      // given
+      const email = 'test@example.com';
+      const accessToken = await createUserAndLogin(email, 'SecurePassword123!', '테스트유저');
+
+      // when - 회원 탈퇴
+      await request(app.getHttpServer())
+        .delete('/users')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(HttpStatus.NO_CONTENT);
+
+      // then - 데이터베이스에서 사용자 확인 (deletedAt 포함)
+      const prisma = TestHelper.getPrisma();
+      const user = await prisma.user.findFirst({
+        where: { email },
+      });
+
+      expect(user).not.toBeNull();
+      expect(user!.deletedAt).not.toBeNull();
+      expect(user!.deletedAt).toBeInstanceOf(Date);
     });
   });
 });

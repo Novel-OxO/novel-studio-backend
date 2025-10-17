@@ -34,8 +34,11 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+      },
     });
 
     if (!user) {
@@ -56,8 +59,35 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return new User(
+      user.id,
+      user.email,
+      user.hashedPassword,
+      user.nickname,
+      user.profileImageUrl,
+      user.role as UserRole,
+      user.createdAt,
+      user.updatedAt,
+      user.deletedAt,
+    );
+  }
+
+  async findByEmailIncludingDeleted(email: string): Promise<User | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email,
+      },
     });
 
     if (!user) {
@@ -97,5 +127,37 @@ export class PrismaUserRepository implements IUserRepository {
       updatedUser.updatedAt,
       updatedUser.deletedAt,
     );
+  }
+
+  async restore(id: string, newUser: NewUser): Promise<User> {
+    const restoredUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        hashedPassword: newUser.password,
+        nickname: newUser.nickname,
+        deletedAt: null,
+      },
+    });
+
+    return new User(
+      restoredUser.id,
+      restoredUser.email,
+      restoredUser.hashedPassword,
+      restoredUser.nickname,
+      restoredUser.profileImageUrl,
+      restoredUser.role as UserRole,
+      restoredUser.createdAt,
+      restoredUser.updatedAt,
+      restoredUser.deletedAt,
+    );
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
   }
 }
