@@ -19,11 +19,22 @@ function setupGlobalFilters(app: INestApplication) {
   app.useGlobalFilters(new GlobalExceptionFilter());
 }
 
+function setupCors(app: INestApplication) {
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Authorization'],
+  });
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   setupGlobalPipes(app);
   setupGlobalFilters(app);
+  setupCors(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }
