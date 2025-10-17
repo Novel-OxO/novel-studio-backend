@@ -2,6 +2,8 @@ import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
 
+import { UserRole } from '@/domain/users/user';
+
 export class AddUserRequest {
   @ApiProperty({
     description: '사용자 이메일',
@@ -58,16 +60,31 @@ export class UserResponse {
   profileImageUrl: string | null;
 
   @ApiProperty({
+    description: '사용자 권한',
+    example: 'USER',
+    enum: UserRole,
+  })
+  role: UserRole;
+
+  @ApiProperty({
     description: '생성일시',
     example: '2023-10-17T12:00:00.000Z',
   })
   createdAt: Date;
 
-  constructor(id: string, email: string, nickname: string, profileImageUrl: string | null, createdAt: Date) {
+  constructor(
+    id: string,
+    email: string,
+    nickname: string,
+    profileImageUrl: string | null,
+    role: UserRole,
+    createdAt: Date,
+  ) {
     this.id = id;
     this.email = email;
     this.nickname = nickname;
     this.profileImageUrl = profileImageUrl;
+    this.role = role;
     this.createdAt = createdAt;
   }
 }

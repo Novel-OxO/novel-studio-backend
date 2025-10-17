@@ -39,6 +39,7 @@ describe('UserController (Integration)', () => {
         email: createUserRequest.email,
         nickname: createUserRequest.nickname,
         profileImageUrl: null,
+        role: 'USER',
       });
       expect(response.body).toHaveProperty('id');
       expect(response.body).toHaveProperty('createdAt');
