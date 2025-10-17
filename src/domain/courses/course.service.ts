@@ -46,4 +46,14 @@ export class CourseService {
   async getCourses(page: number, pageSize: number, filter?: CourseFilter): Promise<CourseListResult> {
     return await this.courseRepository.findAll(page, pageSize, filter);
   }
+
+  async getCourseById(id: string): Promise<Course> {
+    const course = await this.courseRepository.findById(id);
+
+    if (!course) {
+      throw new NotFoundException('코스를 찾을 수 없습니다.');
+    }
+
+    return course;
+  }
 }

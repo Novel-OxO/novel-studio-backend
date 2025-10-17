@@ -902,4 +902,163 @@ describe('CourseController (Integration)', () => {
       await request(app.getHttpServer()).get('/courses?level=INVALID_LEVEL').expect(HttpStatus.BAD_REQUEST);
     });
   });
+
+  describe('GET /courses/:id', () => {
+    it('유효한 ID로 코스 상세 조회 시 200 상태코드와 코스 정보를 반환한다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+          thumbnailUrl: 'https://example.com/thumbnail.jpg',
+          price: 50000,
+          level: CourseLevel.INTERMEDIATE,
+          status: CourseStatus.OPEN,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      const response = await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.OK);
+
+      // then
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.data).toMatchObject({
+        id: courseId,
+        slug: 'test-course',
+        title: '테스트 코스',
+        description: '테스트 설명',
+        thumbnailUrl: 'https://example.com/thumbnail.jpg',
+        price: 50000,
+        level: CourseLevel.INTERMEDIATE,
+        status: CourseStatus.OPEN,
+      });
+      expect(response.body.data).toHaveProperty('createdAt');
+    });
+
+    it('존재하지 않는 ID로 조회 시 404 상태코드를 반환한다', async () => {
+      // given
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+
+      // when & then
+      await request(app.getHttpServer()).get(`/courses/${nonExistentId}`).expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('삭제된 코스는 조회되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 데이터베이스에서 직접 삭제 처리 (소프트 삭제)
+      const prisma = TestHelper.getPrisma();
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { deletedAt: new Date() },
+      });
+
+      // when & then - 삭제된 코스 조회 시도
+      await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('코스 기본 정보가 모두 포함되어 반환된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'complete-course',
+          title: '완전한 코스',
+          description: '완전한 설명',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          price: 99000,
+          level: CourseLevel.ADVANCED,
+          status: CourseStatus.OPEN,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      const response = await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.OK);
+
+      // then - 모든 필드가 존재하는지 확인
+      const courseData = response.body.data;
+      expect(courseData).toHaveProperty('id');
+      expect(courseData).toHaveProperty('slug');
+      expect(courseData).toHaveProperty('title');
+      expect(courseData).toHaveProperty('description');
+      expect(courseData).toHaveProperty('thumbnailUrl');
+      expect(courseData).toHaveProperty('price');
+      expect(courseData).toHaveProperty('level');
+      expect(courseData).toHaveProperty('status');
+      expect(courseData).toHaveProperty('createdAt');
+    });
+
+    it('thumbnailUrl이 null인 코스도 정상 조회된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'no-thumbnail-course',
+          title: '썸네일 없는 코스',
+          description: '썸네일 없는 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      const response = await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.thumbnailUrl).toBeNull();
+    });
+
+    it('DRAFT 상태의 코스도 상세 조회가 가능하다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-course',
+          title: 'Draft 코스',
+          description: 'Draft 설명',
+          status: CourseStatus.DRAFT,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // when
+      const response = await request(app.getHttpServer()).get(`/courses/${courseId}`).expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.status).toBe(CourseStatus.DRAFT);
+    });
+  });
 });
