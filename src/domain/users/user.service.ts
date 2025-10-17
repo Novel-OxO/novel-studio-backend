@@ -1,8 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PasswordEncoder } from '@/domain/auth/password-encoder';
 
 import { NewUser } from './new-user';
+import { UpdateUser } from './update-user';
 import { User } from './user';
 import { USER_REPOSITORY, type IUserRepository } from './user.repository';
 
@@ -27,5 +28,16 @@ export class UserService {
 
     // 사용자 생성
     return await this.userRepository.save(newUser);
+  }
+
+  async updateUser(userId: string, updateUser: UpdateUser): Promise<User> {
+    // 사용자 존재 여부 확인
+    const existingUser = await this.userRepository.findById(userId);
+    if (!existingUser) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 사용자 정보 업데이트
+    return await this.userRepository.update(userId, updateUser);
   }
 }
