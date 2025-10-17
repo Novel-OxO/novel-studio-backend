@@ -16,17 +16,26 @@ export class UserService {
   ) {}
 
   async createUser(newUser: NewUser): Promise<User> {
-    // 이메일 중복 체크
-    const existingUser = await this.userRepository.findByEmail(newUser.email);
+    // 이메일 중복 체크 (삭제된 사용자 포함)
+    const existingUser = await this.userRepository.findByEmailIncludingDeleted(newUser.email);
+
     if (existingUser) {
-      throw new ConflictException('이미 사용 중인 이메일입니다.');
+      // 활성 사용자가 존재하는 경우
+      if (existingUser.deletedAt === null) {
+        throw new ConflictException('이미 사용 중인 이메일입니다.');
+      }
+
+      // 삭제된 사용자가 존재하는 경우 - 재가입 처리
+      const hashedPassword = await this.passwordEncoder.hashPassword(newUser.password);
+      newUser.changePassword(hashedPassword);
+
+      return await this.userRepository.restore(existingUser.id, newUser);
     }
 
-    // 비밀번호 암호화
+    // 기존 사용자가 없는 경우 - 신규 가입
     const hashedPassword = await this.passwordEncoder.hashPassword(newUser.password);
     newUser.changePassword(hashedPassword);
 
-    // 사용자 생성
     return await this.userRepository.save(newUser);
   }
 
@@ -39,5 +48,16 @@ export class UserService {
 
     // 사용자 정보 업데이트
     return await this.userRepository.update(userId, updateUser);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    // 사용자 존재 여부 확인
+    const existingUser = await this.userRepository.findById(userId);
+    if (!existingUser) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    // 소프트 삭제
+    await this.userRepository.softDelete(userId);
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccessTokenGuard } from '@/api/controller/auth/access-token.guard';
@@ -83,5 +83,26 @@ export class UserController {
     );
 
     return createSuccessResponse(response);
+  }
+
+  @Delete()
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: '회원 탈퇴 성공',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: '인증되지 않은 사용자',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '사용자를 찾을 수 없습니다',
+  })
+  async deleteMe(@CurrentUser() currentUser: CurrentUserPayload): Promise<void> {
+    await this.userService.deleteUser(currentUser.userId);
   }
 }
