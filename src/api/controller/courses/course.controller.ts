@@ -60,6 +60,44 @@ export class CourseController {
     return createPaginatedResponse(courseResponses, totalCount, query.page!, query.pageSize!);
   }
 
+  /**
+   * 코스 상세 조회
+   *
+   * TODO: 추후 섹션(Section)과 강의(Lecture)가 추가되면,
+   * includeSections, includeLectures 등의 쿼리 파라미터를 통해
+   * 조회 옵션을 선택할 수 있도록 고도화 예정
+   * 예: GET /courses/:id?includeSections=true&includeLectures=true
+   */
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '코스 상세 조회' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '코스 상세 조회 성공',
+    type: CourseResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '코스를 찾을 수 없습니다',
+  })
+  async getCourseById(@Param('id') id: string): Promise<SuccessResponse<CourseResponse>> {
+    const course = await this.courseService.getCourseById(id);
+
+    const response = new CourseResponse(
+      course.id,
+      course.slug,
+      course.title,
+      course.description,
+      course.thumbnailUrl,
+      course.price,
+      course.level,
+      course.status,
+      course.createdAt,
+    );
+
+    return createSuccessResponse(response);
+  }
+
   @Post()
   @UseGuards(AdminGuard)
   @ApiBearerAuth()
