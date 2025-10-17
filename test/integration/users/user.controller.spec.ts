@@ -35,14 +35,16 @@ describe('UserController (Integration)', () => {
         .expect(HttpStatus.CREATED);
 
       // then
-      expect(response.body).toMatchObject({
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toMatchObject({
         email: createUserRequest.email,
         nickname: createUserRequest.nickname,
         profileImageUrl: null,
         role: 'USER',
       });
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('createdAt');
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('createdAt');
     });
 
     it('중복된 이메일로 회원가입 시 409 상태코드를 반환한다', async () => {

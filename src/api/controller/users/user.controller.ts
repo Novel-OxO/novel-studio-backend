@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { createSuccessResponse, SuccessResponse } from '@/api/support/response';
+
 import { NewUser } from '@/domain/users/new-user';
 import { UserService } from '@/domain/users/user.service';
 
@@ -27,9 +29,18 @@ export class UserController {
     status: HttpStatus.BAD_REQUEST,
     description: '잘못된 요청 데이터',
   })
-  async createUser(@Body() request: AddUserRequest): Promise<UserResponse> {
+  async createUser(@Body() request: AddUserRequest): Promise<SuccessResponse<UserResponse>> {
     const user = await this.userService.createUser(new NewUser(request.email, request.password, request.nickname));
 
-    return new UserResponse(user.id, user.email, user.nickname, user.profileImageUrl, user.role, user.createdAt);
+    const response = new UserResponse(
+      user.id,
+      user.email,
+      user.nickname,
+      user.profileImageUrl,
+      user.role,
+      user.createdAt,
+    );
+
+    return createSuccessResponse(response);
   }
 }
