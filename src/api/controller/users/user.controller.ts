@@ -30,6 +30,6 @@ export class UserController {
   async createUser(@Body() request: AddUserRequest): Promise<UserResponse> {
     const user = await this.userService.createUser(new NewUser(request.email, request.password, request.nickname));
 
-    return new UserResponse(user.id, user.email, user.nickname, user.profileImageUrl, user.createdAt);
+    return new UserResponse(user.id, user.email, user.nickname, user.profileImageUrl, user.role, user.createdAt);
   }
 }

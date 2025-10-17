@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { NewUser } from '@/domain/users/new-user';
-import { User } from '@/domain/users/user';
+import { User, UserRole } from '@/domain/users/user';
 import { IUserRepository } from '@/domain/users/user.repository';
 
 import { PrismaService } from './prisma.service';
@@ -25,6 +25,7 @@ export class PrismaUserRepository implements IUserRepository {
       createdUser.hashedPassword,
       createdUser.nickname,
       createdUser.profileImageUrl,
+      createdUser.role as UserRole,
       createdUser.createdAt,
       createdUser.updatedAt,
       createdUser.deletedAt,
@@ -46,6 +47,7 @@ export class PrismaUserRepository implements IUserRepository {
       user.hashedPassword,
       user.nickname,
       user.profileImageUrl,
+      user.role as UserRole,
       user.createdAt,
       user.updatedAt,
       user.deletedAt,
