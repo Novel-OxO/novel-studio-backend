@@ -7,6 +7,7 @@ import { AuthModule } from './auth.module';
 import { CartModule } from './cart.module';
 import { CourseModule } from './course.module';
 import { LectureModule } from './lecture.module';
+import { OrderModule } from './order.module';
 import { PrismaModule } from './prisma.module';
 import { SectionModule } from './section.module';
 import { UserModule } from './user.module';
@@ -33,7 +34,7 @@ const externalModules = [
   PrismaModule,
 ];
 
-const internalModules = [UserModule, AuthModule, CourseModule, SectionModule, LectureModule, CartModule];
+const internalModules = [UserModule, AuthModule, CourseModule, SectionModule, LectureModule, CartModule, OrderModule];
 
 @Module({
   imports: [...externalModules, ...internalModules],
