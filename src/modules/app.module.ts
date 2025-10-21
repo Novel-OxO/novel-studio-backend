@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerMiddleware } from '@/api/support';
 
 import { AuthModule } from './auth.module';
+import { CartModule } from './cart.module';
 import { CourseModule } from './course.module';
 import { LectureModule } from './lecture.module';
 import { PrismaModule } from './prisma.module';
@@ -32,7 +33,7 @@ const externalModules = [
   PrismaModule,
 ];
 
-const internalModules = [UserModule, AuthModule, CourseModule, SectionModule, LectureModule];
+const internalModules = [UserModule, AuthModule, CourseModule, SectionModule, LectureModule, CartModule];
 
 @Module({
   imports: [...externalModules, ...internalModules],
