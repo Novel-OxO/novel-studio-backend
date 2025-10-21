@@ -35,7 +35,8 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // Soft Delete Column
 
-  courses Course[] // 강사가 만든 코스들
+  courses   Course[]   // 강사가 만든 코스들
+  cartItems CartItem[] // 장바구니 아이템들
 
   @@index([email])
   @@map("users")
@@ -56,8 +57,9 @@ model Course {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at") // Soft Delete Column
 
-  sections Section[]
-  lectures Lecture[]
+  sections  Section[]
+  lectures  Lecture[]
+  cartItems CartItem[] // 장바구니에 담긴 아이템들
 
   @@index([slug])
   @@map("courses")
@@ -96,4 +98,19 @@ model Lecture {
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("lectures")
+}
+
+// 장바구니 아이템
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("cart_items")
 }
