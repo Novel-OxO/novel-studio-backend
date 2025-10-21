@@ -29,6 +29,7 @@ enum OrderStatus {
   CANCELLED // 취소됨
 }
 
+
 model User {
   id              String   @id @default(cuid())
   nickname        String   @map("nickname")
@@ -41,9 +42,10 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // Soft Delete Column
 
-  courses   Course[]   // 강사가 만든 코스들
-  cartItems CartItem[] // 장바구니 아이템들
-  orders    Order[]    // 주문 내역
+  courses     Course[]     // 강사가 만든 코스들
+  cartItems   CartItem[]   // 장바구니 아이템들
+  orders      Order[]      // 주문 내역
+  enrollments Enrollment[] // 수강 내역
 
   @@index([email])
   @@map("users")
@@ -64,9 +66,10 @@ model Course {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at") // Soft Delete Column
 
-  sections  Section[]
-  lectures  Lecture[]
-  cartItems CartItem[] // 장바구니에 담긴 아이템들
+  sections    Section[]
+  lectures    Lecture[]
+  cartItems   CartItem[]   // 장바구니에 담긴 아이템들
+  enrollments Enrollment[] // 수강 내역
 
   @@index([slug])
   @@map("courses")
@@ -133,6 +136,7 @@ model Order {
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  payment    Payment?
 
   @@index([userId])
   @@index([status])
@@ -154,4 +158,59 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// 결제 모델 (포트원 연동용)
+model Payment {
+  id                   String    @id @default(uuid())
+  paymentId            String    @unique @map("payment_id") // 포트원 결제 ID
+  orderId              String    @unique @map("order_id")
+  transactionId        String?   @map("transaction_id") // 포트원 거래 ID
+  amount               Int       @map("amount")
+  currency             String    @default("KRW") // 화폐
+  paymentMethod        String    @map("payment_method") // 결제 수단 (CARD, VIRTUAL_ACCOUNT, etc)
+  pgProvider           String?   @map("pg_provider") // PG사 (tosspayments, etc)
+  status               String    @default("READY") // READY, PAID, FAILED, CANCELLED
+  failureReason        String?   @map("failure_reason")
+  paidAt               DateTime? @map("paid_at")
+  cancelledAt          DateTime? @map("cancelled_at")
+  // 가상계좌 정보
+  virtualAccountNumber String?   @map("virtual_account_number")
+  virtualAccountBank   String?   @map("virtual_account_bank")
+  virtualAccountHolder String?   @map("virtual_account_holder")
+  virtualAccountExpiry DateTime? @map("virtual_account_expiry")
+  // 포트원 웹훅 정보
+  portoneData          Json?     @map("portone_data") // 포트원에서 받은 전체 데이터
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// 수강 정보
+model Enrollment {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  courseId          String    @map("course_id")
+  enrolledAt        DateTime  @default(now()) @map("enrolled_at") // 수강 시작 시각
+  expiresAt         DateTime? @map("expires_at") // 수강 만료 시각 (null이면 평생)
+  lastAccessedAt    DateTime? @map("last_accessed_at") // 마지막 접근 시각
+  progress          Int       @default(0) // 진행률 (0-100)
+  isCompleted       Boolean   @default(false) @map("is_completed") // 완료 여부
+  completedAt       DateTime? @map("completed_at") // 완료 시각
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("enrollments")
 }
