@@ -23,6 +23,12 @@ enum CourseStatus {
   OPEN
 }
 
+enum OrderStatus {
+  PENDING   // 결제 대기
+  PAID      // 결제 완료
+  CANCELLED // 취소됨
+}
+
 model User {
   id              String   @id @default(cuid())
   nickname        String   @map("nickname")
@@ -37,6 +43,7 @@ model User {
 
   courses   Course[]   // 강사가 만든 코스들
   cartItems CartItem[] // 장바구니 아이템들
+  orders    Order[]    // 주문 내역
 
   @@index([email])
   @@map("users")
@@ -113,4 +120,38 @@ model CartItem {
 
   @@unique([userId, courseId])
   @@map("cart_items")
+}
+
+// 주문
+model Order {
+  id         String      @id @default(uuid())
+  userId     String      @map("user_id")
+  totalPrice Int         @map("total_price")
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+// 주문 아이템 (주문 시점의 코스 정보 스냅샷)
+model OrderItem {
+  id              String   @id @default(uuid())
+  orderId         String   @map("order_id")
+  courseId        String   @map("course_id") // FK 아님, 참조용
+  courseTitle     String   @map("course_title")
+  courseSlug      String   @map("course_slug")
+  courseThumbnail String?  @map("course_thumbnail")
+  price           Int
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
 }
