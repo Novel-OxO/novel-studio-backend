@@ -3,6 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaClient } from '@prisma/client';
 
+import { GlobalExceptionFilter } from '@/api/support';
+
 import { AppModule } from '@/modules/app.module';
 
 /**
@@ -35,6 +37,9 @@ export class TestHelper {
         transform: true,
       }),
     );
+
+    // Global Exception Filter 설정
+    this.app.useGlobalFilters(new GlobalExceptionFilter());
 
     await this.app.init();
 
@@ -80,6 +85,8 @@ export class TestHelper {
     }
 
     // 모든 테이블의 데이터 삭제 (외래 키 제약 조건 고려하여 순서 중요)
+    await this.prisma.cartItem.deleteMany({});
+    await this.prisma.lecture.deleteMany({});
     await this.prisma.section.deleteMany({});
     await this.prisma.course.deleteMany({});
     await this.prisma.user.deleteMany({});
