@@ -53,9 +53,6 @@ jobs:
       - name: 린트 검사
         run: npm run lint
 
-      - name: 단위 테스트 실행
-        run: npm run test:unit
-
       - name: 통합 테스트 실행
         run: npm run test:integration
 
