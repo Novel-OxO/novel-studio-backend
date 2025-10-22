@@ -11,6 +11,7 @@ import { OrderModule } from './order.module';
 import { PaymentModule } from './payment.module';
 import { PrismaModule } from './prisma.module';
 import { QuestionModule } from './question.module';
+import { ReviewModule } from './review.module';
 import { SectionModule } from './section.module';
 import { UserModule } from './user.module';
 
@@ -46,6 +47,7 @@ const internalModules = [
   OrderModule,
   PaymentModule,
   QuestionModule,
+  ReviewModule,
 ];
 
 @Module({
