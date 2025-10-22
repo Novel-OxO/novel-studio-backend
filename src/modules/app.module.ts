@@ -10,6 +10,7 @@ import { LectureModule } from './lecture.module';
 import { OrderModule } from './order.module';
 import { PaymentModule } from './payment.module';
 import { PrismaModule } from './prisma.module';
+import { QuestionModule } from './question.module';
 import { SectionModule } from './section.module';
 import { UserModule } from './user.module';
 
@@ -44,6 +45,7 @@ const internalModules = [
   CartModule,
   OrderModule,
   PaymentModule,
+  QuestionModule,
 ];
 
 @Module({

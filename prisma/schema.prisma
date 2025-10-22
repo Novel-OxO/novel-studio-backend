@@ -46,6 +46,8 @@ model User {
   cartItems   CartItem[]   // 장바구니 아이템들
   orders      Order[]      // 주문 내역
   enrollments Enrollment[] // 수강 내역
+  questions   Question[]   // 작성한 질문들
+  answers     Answer[]     // 작성한 답변들
 
   @@index([email])
   @@map("users")
@@ -70,6 +72,7 @@ model Course {
   lectures    Lecture[]
   cartItems   CartItem[]   // 장바구니에 담긴 아이템들
   enrollments Enrollment[] // 수강 내역
+  questions   Question[]   // 강의 관련 질문들
 
   @@index([slug])
   @@map("courses")
@@ -213,4 +216,44 @@ model Enrollment {
   @@index([userId])
   @@index([courseId])
   @@map("enrollments")
+}
+
+// ==================== QnA System ====================
+
+// 질문
+model Question {
+  id         String    @id @default(uuid())
+  title      String    // 질문 제목
+  content    String    @db.Text // 질문 내용
+  userId     String    @map("user_id") // 질문 작성자
+  courseId   String    @map("course_id") // 관련 강의
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  answers Answer[] // 답변들
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("questions")
+}
+
+// 답변
+model Answer {
+  id         String    @id @default(uuid())
+  content    String    @db.Text // 답변 내용
+  userId     String    @map("user_id") // 답변 작성자
+  questionId String    @map("question_id") // 관련 질문
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([questionId])
+  @@map("answers")
 }
