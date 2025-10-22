@@ -7,6 +7,7 @@ import { AuthModule } from './auth.module';
 import { CartModule } from './cart.module';
 import { CourseModule } from './course.module';
 import { LectureModule } from './lecture.module';
+import { MediaModule } from './media.module';
 import { OrderModule } from './order.module';
 import { PaymentModule } from './payment.module';
 import { PrismaModule } from './prisma.module';
@@ -48,6 +49,7 @@ const internalModules = [
   PaymentModule,
   QuestionModule,
   ReviewModule,
+  MediaModule,
 ];
 
 @Module({
