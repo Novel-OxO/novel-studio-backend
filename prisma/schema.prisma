@@ -42,12 +42,14 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // Soft Delete Column
 
-  courses     Course[]     // 강사가 만든 코스들
-  cartItems   CartItem[]   // 장바구니 아이템들
-  orders      Order[]      // 주문 내역
-  enrollments Enrollment[] // 수강 내역
-  questions   Question[]   // 작성한 질문들
-  answers     Answer[]     // 작성한 답변들
+  courses       Course[]      // 강사가 만든 코스들
+  cartItems     CartItem[]    // 장바구니 아이템들
+  orders        Order[]       // 주문 내역
+  enrollments   Enrollment[]  // 수강 내역
+  questions     Question[]    // 작성한 질문들
+  answers       Answer[]      // 작성한 답변들
+  reviews       Review[]      // 작성한 리뷰들
+  reviewReplies ReviewReply[] // 작성한 리뷰 답글들
 
   @@index([email])
   @@map("users")
@@ -73,6 +75,7 @@ model Course {
   cartItems   CartItem[]   // 장바구니에 담긴 아이템들
   enrollments Enrollment[] // 수강 내역
   questions   Question[]   // 강의 관련 질문들
+  reviews     Review[]     // 강의 리뷰들
 
   @@index([slug])
   @@map("courses")
@@ -256,4 +259,45 @@ model Answer {
   @@index([userId])
   @@index([questionId])
   @@map("answers")
+}
+
+// ==================== Review System ====================
+
+// 수강평
+model Review {
+  id        String    @id @default(uuid())
+  rating    Int       // 평점 (1-5)
+  title     String    // 리뷰 제목
+  content   String    @db.Text // 리뷰 내용
+  userId    String    @map("user_id") // 작성자
+  courseId  String    @map("course_id") // 대상 강의
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // Soft Delete
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reply  ReviewReply? // 강사 답글 (1:1 관계)
+
+  @@unique([userId, courseId]) // 중복 리뷰 방지
+  @@index([courseId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+// 수강평 답글 (강사용)
+model ReviewReply {
+  id        String    @id @default(uuid())
+  content   String    @db.Text // 답글 내용
+  reviewId  String    @unique @map("review_id") // 리뷰 ID
+  userId    String    @map("user_id") // 답글 작성자 (강사)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("review_replies")
 }
