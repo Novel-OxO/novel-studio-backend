@@ -21,10 +21,6 @@ export class PaymentService {
     private readonly enrollmentRepository: IEnrollmentRepository,
   ) {}
 
-  /**
-   * Mock 결제 검증 (무조건 성공)
-   * 실제 환경에서는 포트원 API를 호출하여 검증
-   */
   async verifyPayment(paymentId: string, orderId: string): Promise<Payment> {
     // 주문 확인
     const order = await this.orderRepository.findById(orderId);
@@ -85,10 +81,6 @@ export class PaymentService {
     return paidPayment;
   }
 
-  /**
-   * Mock 웹훅 처리 (무조건 성공)
-   * 실제 환경에서는 포트원 웹훅 서명 검증 필요
-   */
   async handleWebhook(paymentId: string, status: string, transactionId?: string): Promise<Payment> {
     const payment = await this.paymentRepository.findByPaymentId(paymentId);
     if (!payment) {
