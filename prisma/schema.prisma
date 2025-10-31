@@ -97,21 +97,22 @@ model Section {
 }
 
 model Lecture {
-  id               String    @id @default(uuid())
-  title            String
-  description      String?
-  order            Int
-  duration         Int?
-  isPreview        Boolean   @default(false) @map("is_preview")
-  sectionId        String    @map("section_id")
-  courseId         String    @map("course_id")
-  videoStorageInfo Json?     @map("video_storage_info")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  deletedAt        DateTime? @map("deleted_at") // Soft Delete Column
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  order       Int
+  duration    Int?      // 재생 시간 (초 단위)
+  videoUrl    String?   @map("video_url") // 비디오 URL
+  isPreview   Boolean   @default(false) @map("is_preview")
+  sectionId   String    @map("section_id")
+  courseId    String    @map("course_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at") // Soft Delete Column
 
-  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  section          Section           @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lectureProgresses LectureProgress[] // 학습 진행률들
 
   @@map("lectures")
 }
@@ -133,12 +134,12 @@ model CartItem {
 
 // 주문
 model Order {
-  id         String      @id @default(uuid())
-  userId     String      @map("user_id")
-  totalPrice Int         @map("total_price")
-  status     OrderStatus @default(PENDING)
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  id          String      @id @default(uuid())
+  userId      String      @map("user_id")
+  totalAmount Int         @map("total_amount")
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
@@ -212,13 +213,34 @@ model Enrollment {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lectureProgresses LectureProgress[] // 개별 강의 진행률들
 
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@map("enrollments")
+}
+
+// 개별 강의 수강 진행률
+model LectureProgress {
+  id           String    @id @default(uuid())
+  enrollmentId String    @map("enrollment_id")
+  lectureId    String    @map("lecture_id")
+  watchTime    Int       @default(0) @map("watch_time") // 시청 시간 (초 단위)
+  isCompleted  Boolean   @default(false) @map("is_completed") // 완료 여부
+  completedAt  DateTime? @map("completed_at") // 완료 시각
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lecture    Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lectureId])
+  @@index([enrollmentId])
+  @@index([lectureId])
+  @@map("lecture_progresses")
 }
 
 // ==================== QnA System ====================

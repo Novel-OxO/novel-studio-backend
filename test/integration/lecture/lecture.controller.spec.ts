@@ -167,22 +167,22 @@ describe('LectureController (Integration)', () => {
         description: null,
         duration: null,
         isPreview: false,
-        videoStorageInfo: null,
+        videoUrl: null,
       });
     });
 
-    it('videoStorageInfo를 JSON으로 저장할 수 있다', async () => {
+    it('videoUrl을 저장할 수 있다', async () => {
       // given
       const { adminId, accessToken } = await createAdminUserAndLogin();
       const course = await createTestCourse(adminId);
       const section = await createTestSection(course.id);
 
-      const videoInfo = { url: 'https://example.com/video.mp4', key: 'video123' };
+      const videoUrl = 'https://example.com/video.mp4';
       const createLectureRequest = {
         title: '1. TypeScript 기초',
         order: 1,
         sectionId: section.id,
-        videoStorageInfo: JSON.stringify(videoInfo),
+        videoUrl,
       };
 
       // when
@@ -193,7 +193,7 @@ describe('LectureController (Integration)', () => {
         .expect(HttpStatus.CREATED);
 
       // then
-      expect(response.body.data.videoStorageInfo).toEqual(videoInfo);
+      expect(response.body.data.videoUrl).toBe(videoUrl);
     });
 
     it('인증되지 않은 사용자가 강의 생성 시 401 상태코드를 반환한다', async () => {
@@ -496,7 +496,7 @@ describe('LectureController (Integration)', () => {
       });
     });
 
-    it('videoStorageInfo를 수정할 수 있다', async () => {
+    it('videoUrl을 수정할 수 있다', async () => {
       // given
       const { adminId, accessToken } = await createAdminUserAndLogin();
       const course = await createTestCourse(adminId);
@@ -512,9 +512,9 @@ describe('LectureController (Integration)', () => {
         },
       });
 
-      const newVideoInfo = { url: 'https://example.com/new-video.mp4', key: 'video456' };
+      const newVideoUrl = 'https://example.com/new-video.mp4';
       const updateLectureRequest = {
-        videoStorageInfo: JSON.stringify(newVideoInfo),
+        videoUrl: newVideoUrl,
       };
 
       // when
@@ -525,7 +525,7 @@ describe('LectureController (Integration)', () => {
         .expect(HttpStatus.OK);
 
       // then
-      expect(response.body.data.videoStorageInfo).toEqual(newVideoInfo);
+      expect(response.body.data.videoUrl).toBe(newVideoUrl);
     });
 
     it('인증되지 않은 사용자가 강의 수정 시 401 상태코드를 반환한다', async () => {

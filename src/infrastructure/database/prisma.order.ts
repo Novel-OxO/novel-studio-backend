@@ -17,7 +17,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     const createdOrder = await this.prisma.order.create({
       data: {
         userId: newOrder.userId,
-        totalPrice: newOrder.totalPrice,
+        totalAmount: newOrder.totalAmount,
         status: OrderStatus.PENDING,
         orderItems: {
           create: newOrder.orderItems.map((item) => ({
@@ -51,7 +51,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     return new Order(
       createdOrder.id,
       createdOrder.userId,
-      createdOrder.totalPrice,
+      createdOrder.totalAmount,
       createdOrder.status,
       orderItems,
       createdOrder.createdAt,
@@ -92,7 +92,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     return new Order(
       order.id,
       order.userId,
-      order.totalPrice,
+      order.totalAmount,
       order.status,
       orderItems,
       order.createdAt,
@@ -150,7 +150,7 @@ export class PrismaOrderRepository implements IOrderRepository {
       return new Order(
         order.id,
         order.userId,
-        order.totalPrice,
+        order.totalAmount,
         order.status,
         orderItems,
         order.createdAt,
@@ -194,7 +194,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     return new Order(
       updatedOrder.id,
       updatedOrder.userId,
-      updatedOrder.totalPrice,
+      updatedOrder.totalAmount,
       updatedOrder.status,
       orderItems,
       updatedOrder.createdAt,

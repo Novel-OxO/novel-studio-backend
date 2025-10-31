@@ -6,6 +6,9 @@ declare global {
       user: {
         userId: string;
         role: UserRole;
+        email: string;
+        nickname: string;
+        profileImageUrl: string | null;
       };
     }
   }

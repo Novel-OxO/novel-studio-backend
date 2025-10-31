@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
-import { User, UserRole } from '@/domain/users/user';
+import { User } from '@/domain/users/user';
 
 import { Token } from './token';
 import { TokenPayload } from './token-payload';
@@ -20,7 +20,7 @@ export class TokenService {
   ) {}
 
   createToken(user: User): Token {
-    const payload = new TokenPayload(user.id, user.role);
+    const payload = new TokenPayload(user.id, user.email, user.nickname, user.profileImageUrl, user.role);
 
     const accessToken = this.createAccessToken(payload);
     const refreshToken = this.createRefreshToken(payload);
@@ -32,27 +32,53 @@ export class TokenService {
     const secret = this.configService.get<string>(JWT_ACCESS_SECRET);
     const expiresIn = this.configService.get<number>(JWT_ACCESS_EXPIRATION);
 
-    return this.jwtService.sign({ userId: payload.userId, role: payload.role }, { secret, expiresIn });
+    if (expiresIn === undefined) {
+      throw Error('JWT_ACCESS_EXPIRATION is not defined');
+    }
+
+    return this.jwtService.sign(
+      {
+        userId: payload.userId,
+        role: payload.role,
+        email: payload.email,
+        nickname: payload.nickname,
+        profileImageUrl: payload.profileImageUrl,
+      },
+      { secret, expiresIn: `${expiresIn}s` },
+    );
   }
 
   private createRefreshToken(payload: TokenPayload): string {
     const secret = this.configService.get<string>(JWT_REFRESH_SECRET);
     const expiresIn = this.configService.get<number>(JWT_REFRESH_EXPIRATION);
 
-    return this.jwtService.sign({ userId: payload.userId, role: payload.role }, { secret, expiresIn });
+    if (expiresIn === undefined) {
+      throw Error('JWT_REFRESH_EXPIRATION is not defined');
+    }
+
+    return this.jwtService.sign(
+      {
+        userId: payload.userId,
+        role: payload.role,
+        email: payload.email,
+        nickname: payload.nickname,
+        profileImageUrl: payload.profileImageUrl,
+      },
+      { secret, expiresIn: `${expiresIn}s` },
+    );
   }
 
   verifyAccessToken(token: string): TokenPayload {
     const secret = this.configService.get<string>(JWT_ACCESS_SECRET);
-    const decoded = this.jwtService.verify<{ userId: string; role: UserRole }>(token, { secret });
+    const decoded = this.jwtService.verify<TokenPayload>(token, { secret });
 
-    return new TokenPayload(decoded.userId, decoded.role);
+    return decoded;
   }
 
   verifyRefreshToken(token: string): TokenPayload {
     const secret = this.configService.get<string>(JWT_REFRESH_SECRET);
-    const decoded = this.jwtService.verify<{ userId: string; role: UserRole }>(token, { secret });
+    const decoded = this.jwtService.verify<TokenPayload>(token, { secret });
 
-    return new TokenPayload(decoded.userId, decoded.role);
+    return decoded;
   }
 }

@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsJSON, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -55,13 +55,13 @@ export class CreateLectureRequest {
   sectionId: string;
 
   @ApiProperty({
-    description: '비디오 저장 정보 (JSON)',
-    example: { url: 'https://example.com/video.mp4', key: 'video123' },
+    description: '비디오 URL',
+    example: 'https://example.com/video.mp4',
     required: false,
   })
   @IsOptional()
-  @IsJSON({ message: '비디오 저장 정보는 유효한 JSON이어야 합니다.' })
-  videoStorageInfo?: string;
+  @IsString({ message: '비디오 URL은 문자열이어야 합니다.' })
+  videoUrl?: string;
 }
 
 export class UpdateLectureRequest {
@@ -114,11 +114,11 @@ export class UpdateLectureRequest {
   isPreview?: boolean;
 
   @ApiProperty({
-    description: '비디오 저장 정보 (JSON)',
-    example: { url: 'https://example.com/video.mp4', key: 'video123' },
+    description: '비디오 URL',
+    example: 'https://example.com/video.mp4',
     required: false,
   })
   @IsOptional()
-  @IsJSON({ message: '비디오 저장 정보는 유효한 JSON이어야 합니다.' })
-  videoStorageInfo?: string;
+  @IsString({ message: '비디오 URL은 문자열이어야 합니다.' })
+  videoUrl?: string;
 }

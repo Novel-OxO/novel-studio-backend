@@ -3,10 +3,10 @@ export class NewLecture {
   description: string | null;
   order: number;
   duration: number | null;
+  videoUrl: string | null;
   isPreview: boolean;
   sectionId: string;
   courseId: string;
-  videoStorageInfo: any | null;
 
   constructor(
     title: string,
@@ -16,17 +16,17 @@ export class NewLecture {
     options?: {
       description?: string;
       duration?: number;
+      videoUrl?: string;
       isPreview?: boolean;
-      videoStorageInfo?: any;
     },
   ) {
     this.title = title;
     this.description = options?.description ?? null;
     this.order = order;
     this.duration = options?.duration ?? null;
+    this.videoUrl = options?.videoUrl ?? null;
     this.isPreview = options?.isPreview ?? false;
     this.sectionId = sectionId;
     this.courseId = courseId;
-    this.videoStorageInfo = options?.videoStorageInfo ?? null;
   }
 }

@@ -63,6 +63,16 @@ export class CourseService {
     return course;
   }
 
+  async getCourseBySlug(slug: string, options?: CourseIncludeOptions): Promise<Course> {
+    const course = await this.courseRepository.findBySlug(slug, options);
+
+    if (!course) {
+      throw new NotFoundException('코스를 찾을 수 없습니다.');
+    }
+
+    return course;
+  }
+
   async deleteCourse(id: string): Promise<void> {
     // 코스 존재 여부 확인
     const existingCourse = await this.courseRepository.findById(id);

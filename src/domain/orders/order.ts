@@ -5,7 +5,7 @@ import { OrderItem } from './order-item';
 export class Order {
   id: string;
   userId: string;
-  totalPrice: number;
+  totalAmount: number;
   status: OrderStatus;
   orderItems: OrderItem[];
   createdAt: Date;
@@ -14,7 +14,7 @@ export class Order {
   constructor(
     id: string,
     userId: string,
-    totalPrice: number,
+    totalAmount: number,
     status: OrderStatus,
     orderItems: OrderItem[],
     createdAt: Date,
@@ -22,7 +22,7 @@ export class Order {
   ) {
     this.id = id;
     this.userId = userId;
-    this.totalPrice = totalPrice;
+    this.totalAmount = totalAmount;
     this.status = status;
     this.orderItems = orderItems;
     this.createdAt = createdAt;

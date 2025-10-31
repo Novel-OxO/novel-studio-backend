@@ -4,8 +4,8 @@ export class UpdateLecture {
   description?: string;
   order?: number;
   duration?: number;
+  videoUrl?: string;
   isPreview?: boolean;
-  videoStorageInfo?: any;
 
   constructor(
     id: string,
@@ -14,8 +14,8 @@ export class UpdateLecture {
       description?: string;
       order?: number;
       duration?: number;
+      videoUrl?: string;
       isPreview?: boolean;
-      videoStorageInfo?: any;
     },
   ) {
     this.id = id;
@@ -23,7 +23,7 @@ export class UpdateLecture {
     this.description = options?.description;
     this.order = options?.order;
     this.duration = options?.duration;
+    this.videoUrl = options?.videoUrl;
     this.isPreview = options?.isPreview;
-    this.videoStorageInfo = options?.videoStorageInfo;
   }
 }

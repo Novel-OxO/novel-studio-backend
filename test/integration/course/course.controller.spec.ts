@@ -1554,4 +1554,349 @@ describe('CourseController (Integration)', () => {
       expect(deletedCourse!.deletedAt).toBeInstanceOf(Date);
     });
   });
+
+  describe('GET /courses/detail/:slug', () => {
+    it('유효한 slug로 코스 조회 시 200 상태코드와 섹션, 강의 정보를 반환한다 (비디오 URL 제외)', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'nestjs-fundamentals',
+          title: 'NestJS 완벽 가이드',
+          description: 'NestJS를 처음부터 끝까지 배우는 완벽한 강의입니다.',
+          thumbnailUrl: 'https://example.com/thumbnail.jpg',
+          price: 50000,
+          level: CourseLevel.INTERMEDIATE,
+          status: CourseStatus.OPEN,
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 생성
+      const prisma = TestHelper.getPrisma();
+      const section1 = await prisma.section.create({
+        data: {
+          title: '섹션 1: 기초',
+          order: 1,
+          courseId: courseId,
+        },
+      });
+
+      const section2 = await prisma.section.create({
+        data: {
+          title: '섹션 2: 심화',
+          order: 2,
+          courseId: courseId,
+        },
+      });
+
+      // 강의 생성 (videoUrl 포함)
+      await prisma.lecture.createMany({
+        data: [
+          {
+            title: '강의 1-1',
+            description: '첫 번째 강의',
+            order: 1,
+            duration: 600,
+            videoUrl: 'https://secret-video-url.com/lecture1-1.mp4',
+            isPreview: true,
+            sectionId: section1.id,
+            courseId: courseId,
+          },
+          {
+            title: '강의 1-2',
+            description: '두 번째 강의',
+            order: 2,
+            duration: 720,
+            videoUrl: 'https://secret-video-url.com/lecture1-2.mp4',
+            isPreview: false,
+            sectionId: section1.id,
+            courseId: courseId,
+          },
+          {
+            title: '강의 2-1',
+            order: 1,
+            duration: 800,
+            videoUrl: 'https://secret-video-url.com/lecture2-1.mp4',
+            isPreview: false,
+            sectionId: section2.id,
+            courseId: courseId,
+          },
+        ],
+      });
+
+      // when
+      const response = await request(app.getHttpServer())
+        .get('/courses/detail/nestjs-fundamentals')
+        .expect(HttpStatus.OK);
+
+      // then
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.data).toMatchObject({
+        id: courseId,
+        slug: 'nestjs-fundamentals',
+        title: 'NestJS 완벽 가이드',
+        description: 'NestJS를 처음부터 끝까지 배우는 완벽한 강의입니다.',
+        thumbnailUrl: 'https://example.com/thumbnail.jpg',
+        price: 50000,
+        level: CourseLevel.INTERMEDIATE,
+        status: CourseStatus.OPEN,
+      });
+
+      // 섹션이 포함되어야 함
+      expect(response.body.data).toHaveProperty('sections');
+      expect(response.body.data.sections).toHaveLength(2);
+      expect(response.body.data.sections[0]).toMatchObject({
+        title: '섹션 1: 기초',
+        order: 1,
+      });
+      expect(response.body.data.sections[1]).toMatchObject({
+        title: '섹션 2: 심화',
+        order: 2,
+      });
+
+      // 강의가 포함되어야 함
+      expect(response.body.data).toHaveProperty('lectures');
+      expect(response.body.data.lectures).toHaveLength(3);
+
+      // ⚠️ 중요: videoUrl이 포함되지 않아야 함!
+      response.body.data.lectures.forEach((lecture: any) => {
+        expect(lecture).not.toHaveProperty('videoUrl');
+        expect(lecture).toHaveProperty('id');
+        expect(lecture).toHaveProperty('title');
+        expect(lecture).toHaveProperty('description');
+        expect(lecture).toHaveProperty('order');
+        expect(lecture).toHaveProperty('duration');
+        expect(lecture).toHaveProperty('isPreview');
+        expect(lecture).toHaveProperty('sectionId');
+        expect(lecture).toHaveProperty('courseId');
+        expect(lecture).toHaveProperty('createdAt');
+        expect(lecture).toHaveProperty('updatedAt');
+      });
+    });
+
+    it('존재하지 않는 slug로 조회 시 404 상태코드를 반환한다', async () => {
+      // when & then
+      await request(app.getHttpServer()).get('/courses/detail/non-existent-slug').expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('삭제된 코스는 slug로 조회되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 데이터베이스에서 직접 삭제 처리 (소프트 삭제)
+      const prisma = TestHelper.getPrisma();
+      await prisma.course.update({
+        where: { id: courseId },
+        data: { deletedAt: new Date() },
+      });
+
+      // when & then - 삭제된 코스 조회 시도
+      await request(app.getHttpServer()).get('/courses/detail/test-course').expect(HttpStatus.NOT_FOUND);
+    });
+
+    it('강의와 섹션이 없는 코스도 정상 조회된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스만 생성 (섹션/강의 없음)
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'empty-course',
+          title: '빈 코스',
+          description: '섹션과 강의가 없는 코스',
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses/detail/empty-course').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data).toHaveProperty('sections');
+      expect(response.body.data.sections).toEqual([]);
+      expect(response.body.data).toHaveProperty('lectures');
+      expect(response.body.data.lectures).toEqual([]);
+    });
+
+    it('삭제된 섹션과 강의는 포함되지 않는다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'test-course',
+          title: '테스트 코스',
+          description: '테스트 설명',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션 생성 (1개는 삭제됨, 1개는 정상)
+      const prisma = TestHelper.getPrisma();
+      await prisma.section.create({
+        data: {
+          title: '삭제된 섹션',
+          order: 1,
+          courseId: courseId,
+          deletedAt: new Date(),
+        },
+      });
+
+      const activeSection = await prisma.section.create({
+        data: {
+          title: '정상 섹션',
+          order: 2,
+          courseId: courseId,
+        },
+      });
+
+      // 강의 생성 (1개는 삭제됨, 1개는 정상)
+      await prisma.lecture.create({
+        data: {
+          title: '삭제된 강의',
+          order: 1,
+          videoUrl: 'https://example.com/deleted-video.mp4',
+          sectionId: activeSection.id,
+          courseId: courseId,
+          deletedAt: new Date(),
+        },
+      });
+
+      await prisma.lecture.create({
+        data: {
+          title: '정상 강의',
+          order: 2,
+          videoUrl: 'https://example.com/active-video.mp4',
+          sectionId: activeSection.id,
+          courseId: courseId,
+        },
+      });
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses/detail/test-course').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.sections).toHaveLength(1);
+      expect(response.body.data.sections[0].title).toBe('정상 섹션');
+      expect(response.body.data.lectures).toHaveLength(1);
+      expect(response.body.data.lectures[0].title).toBe('정상 강의');
+      // videoUrl이 노출되지 않아야 함
+      expect(response.body.data.lectures[0]).not.toHaveProperty('videoUrl');
+    });
+
+    it('섹션과 강의가 order 순서대로 정렬되어 반환된다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      // 코스 생성
+      const createResponse = await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'ordered-course',
+          title: '순서 테스트 코스',
+          description: '순서 확인용',
+        })
+        .expect(HttpStatus.CREATED);
+
+      const courseId = createResponse.body.data.id;
+
+      // 섹션을 역순으로 생성
+      const prisma = TestHelper.getPrisma();
+      await prisma.section.create({
+        data: { title: '섹션 3', order: 3, courseId },
+      });
+
+      const section1 = await prisma.section.create({
+        data: { title: '섹션 1', order: 1, courseId },
+      });
+
+      await prisma.section.create({
+        data: { title: '섹션 2', order: 2, courseId },
+      });
+
+      // 강의도 역순으로 생성
+      await prisma.lecture.createMany({
+        data: [
+          {
+            title: '강의 3',
+            order: 3,
+            sectionId: section1.id,
+            courseId,
+          },
+          {
+            title: '강의 1',
+            order: 1,
+            sectionId: section1.id,
+            courseId,
+          },
+          {
+            title: '강의 2',
+            order: 2,
+            sectionId: section1.id,
+            courseId,
+          },
+        ],
+      });
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses/detail/ordered-course').expect(HttpStatus.OK);
+
+      // then - 섹션이 order 순서대로 정렬되어야 함
+      expect(response.body.data.sections[0].title).toBe('섹션 1');
+      expect(response.body.data.sections[1].title).toBe('섹션 2');
+      expect(response.body.data.sections[2].title).toBe('섹션 3');
+
+      // 강의도 order 순서대로 정렬되어야 함
+      expect(response.body.data.lectures[0].title).toBe('강의 1');
+      expect(response.body.data.lectures[1].title).toBe('강의 2');
+      expect(response.body.data.lectures[2].title).toBe('강의 3');
+    });
+
+    it('DRAFT 상태의 코스도 slug로 조회가 가능하다', async () => {
+      // given
+      const { accessToken } = await createAdminUserAndLogin();
+
+      await request(app.getHttpServer())
+        .post('/courses')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          slug: 'draft-course',
+          title: 'Draft 코스',
+          description: 'Draft 설명',
+          status: CourseStatus.DRAFT,
+        })
+        .expect(HttpStatus.CREATED);
+
+      // when
+      const response = await request(app.getHttpServer()).get('/courses/detail/draft-course').expect(HttpStatus.OK);
+
+      // then
+      expect(response.body.data.status).toBe(CourseStatus.DRAFT);
+    });
+  });
 });

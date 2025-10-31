@@ -122,7 +122,7 @@ describe('OrderController (Integration)', () => {
       expect(response.body).toHaveProperty('success', true);
       expect(response.body.data).toMatchObject({
         userId,
-        totalPrice: 120000,
+        totalAmount: 120000,
         status: OrderStatus.PENDING,
       });
       expect(response.body.data).toHaveProperty('id');
@@ -198,12 +198,12 @@ describe('OrderController (Integration)', () => {
       expect(response.body.data.items).toHaveLength(2);
       expect(response.body.data.items[0]).toMatchObject({
         userId,
-        totalPrice: 40000,
+        totalAmount: 40000,
         status: OrderStatus.PENDING,
       });
       expect(response.body.data.items[1]).toMatchObject({
         userId,
-        totalPrice: 30000,
+        totalAmount: 30000,
         status: OrderStatus.PENDING,
       });
       expect(response.body.data).toHaveProperty('pagination');
@@ -338,7 +338,7 @@ describe('OrderController (Integration)', () => {
       expect(response.body.data).toMatchObject({
         id: orderId,
         userId,
-        totalPrice: 100000,
+        totalAmount: 100000,
         status: OrderStatus.PENDING,
       });
       expect(response.body.data.orderItems).toHaveLength(1);

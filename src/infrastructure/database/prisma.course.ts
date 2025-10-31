@@ -131,10 +131,10 @@ export class PrismaCourseRepository implements ICourseRepository {
               lecture.description,
               lecture.order,
               lecture.duration,
+              lecture.videoUrl,
               lecture.isPreview,
               lecture.sectionId,
               lecture.courseId,
-              lecture.videoStorageInfo,
               lecture.createdAt,
               lecture.updatedAt,
               lecture.deletedAt,
@@ -160,7 +160,7 @@ export class PrismaCourseRepository implements ICourseRepository {
     );
   }
 
-  async findBySlug(slug: string): Promise<Course | null> {
+  async findBySlug(slug: string, options?: CourseIncludeOptions): Promise<Course | null> {
     const course = await this.prisma.course.findFirst({
       where: {
         slug,
@@ -168,6 +168,18 @@ export class PrismaCourseRepository implements ICourseRepository {
       },
       include: {
         instructor: true,
+        sections: options?.includeSections
+          ? {
+              where: { deletedAt: null },
+              orderBy: { order: 'asc' },
+            }
+          : false,
+        lectures: options?.includeLectures
+          ? {
+              where: { deletedAt: null },
+              orderBy: { order: 'asc' },
+            }
+          : false,
       },
     });
 
@@ -187,6 +199,41 @@ export class PrismaCourseRepository implements ICourseRepository {
       course.instructor.deletedAt,
     );
 
+    const sections = course.sections
+      ? course.sections.map(
+          (section) =>
+            new Section(
+              section.id,
+              section.title,
+              section.order,
+              section.courseId,
+              section.createdAt,
+              section.updatedAt,
+              section.deletedAt,
+            ),
+        )
+      : undefined;
+
+    const lectures = course.lectures
+      ? course.lectures.map(
+          (lecture) =>
+            new Lecture(
+              lecture.id,
+              lecture.title,
+              lecture.description,
+              lecture.order,
+              lecture.duration,
+              lecture.videoUrl,
+              lecture.isPreview,
+              lecture.sectionId,
+              lecture.courseId,
+              lecture.createdAt,
+              lecture.updatedAt,
+              lecture.deletedAt,
+            ),
+        )
+      : undefined;
+
     return new Course(
       course.id,
       course.slug,
@@ -200,6 +247,8 @@ export class PrismaCourseRepository implements ICourseRepository {
       course.createdAt,
       course.updatedAt,
       course.deletedAt,
+      sections,
+      lectures,
     );
   }
 

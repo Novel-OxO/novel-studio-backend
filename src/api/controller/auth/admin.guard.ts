@@ -22,6 +22,9 @@ export class AdminGuard implements CanActivate {
       request.user = {
         userId: payload.userId,
         role: payload.role,
+        email: payload.email,
+        nickname: payload.nickname,
+        profileImageUrl: payload.profileImageUrl,
       };
 
       // 관리자 권한 확인

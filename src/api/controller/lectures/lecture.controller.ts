@@ -46,13 +46,11 @@ export class LectureController {
     @Param('courseId') courseId: string,
     @Body() request: CreateLectureRequest,
   ): Promise<SuccessResponse<LectureResponse>> {
-    const videoStorageInfo = request.videoStorageInfo ? JSON.parse(request.videoStorageInfo) : null;
-
     const newLecture = new NewLecture(request.title, request.order, request.sectionId, courseId, {
       description: request.description,
       duration: request.duration,
+      videoUrl: request.videoUrl,
       isPreview: request.isPreview,
-      videoStorageInfo,
     });
 
     const lecture = await this.lectureService.createLecture(newLecture);
@@ -63,10 +61,10 @@ export class LectureController {
       lecture.description,
       lecture.order,
       lecture.duration,
+      lecture.videoUrl,
       lecture.isPreview,
       lecture.sectionId,
       lecture.courseId,
-      lecture.videoStorageInfo,
       lecture.createdAt,
       lecture.updatedAt,
     );
@@ -104,15 +102,13 @@ export class LectureController {
     @Param('id') id: string,
     @Body() request: UpdateLectureRequest,
   ): Promise<SuccessResponse<LectureResponse>> {
-    const videoStorageInfo = request.videoStorageInfo ? JSON.parse(request.videoStorageInfo) : undefined;
-
     const updateLecture = new UpdateLecture(id, {
       title: request.title,
       description: request.description,
       order: request.order,
       duration: request.duration,
+      videoUrl: request.videoUrl,
       isPreview: request.isPreview,
-      videoStorageInfo,
     });
 
     const lecture = await this.lectureService.updateLecture(updateLecture);
@@ -123,10 +119,10 @@ export class LectureController {
       lecture.description,
       lecture.order,
       lecture.duration,
+      lecture.videoUrl,
       lecture.isPreview,
       lecture.sectionId,
       lecture.courseId,
-      lecture.videoStorageInfo,
       lecture.createdAt,
       lecture.updatedAt,
     );

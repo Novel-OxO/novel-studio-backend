@@ -21,6 +21,9 @@ export class AccessTokenGuard implements CanActivate {
       request.user = {
         userId: payload.userId,
         role: payload.role,
+        email: payload.email,
+        nickname: payload.nickname,
+        profileImageUrl: payload.profileImageUrl,
       };
     } catch {
       throw new UnauthorizedException('유효하지 않은 액세스 토큰입니다.');

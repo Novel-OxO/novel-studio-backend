@@ -2,12 +2,12 @@ import { NewOrderItem } from './new-order-item';
 
 export class NewOrder {
   userId: string;
-  totalPrice: number;
+  totalAmount: number;
   orderItems: NewOrderItem[];
 
-  constructor(userId: string, totalPrice: number, orderItems: NewOrderItem[]) {
+  constructor(userId: string, totalAmount: number, orderItems: NewOrderItem[]) {
     this.userId = userId;
-    this.totalPrice = totalPrice;
+    this.totalAmount = totalAmount;
     this.orderItems = orderItems;
   }
 }

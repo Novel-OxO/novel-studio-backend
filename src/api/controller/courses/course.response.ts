@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 import { CourseLevel, CourseStatus } from '@prisma/client';
 
-import { LectureResponse } from '@/api/controller/lectures/lecture.response';
+import { LecturePreviewResponse, LectureResponse } from '@/api/controller/lectures/lecture.response';
 import { SectionResponse } from '@/api/controller/sections/section.response';
 
 export class CourseResponse {
@@ -75,7 +75,7 @@ export class CourseResponse {
     type: [LectureResponse],
     required: false,
   })
-  lectures?: LectureResponse[];
+  lectures?: LectureResponse[] | LecturePreviewResponse[];
 
   constructor(
     id: string,
@@ -88,7 +88,7 @@ export class CourseResponse {
     status: CourseStatus,
     createdAt: Date,
     sections?: SectionResponse[],
-    lectures?: LectureResponse[],
+    lectures?: LectureResponse[] | LecturePreviewResponse[],
   ) {
     this.id = id;
     this.slug = slug;

@@ -79,7 +79,7 @@ export class OrderResponse {
     description: '총 주문 금액',
     example: 150000,
   })
-  totalPrice: number;
+  totalAmount: number;
 
   @ApiProperty({
     description: '주문 상태',
@@ -110,7 +110,7 @@ export class OrderResponse {
     const response = new OrderResponse();
     response.id = order.id;
     response.userId = order.userId;
-    response.totalPrice = order.totalPrice;
+    response.totalAmount = order.totalAmount;
     response.status = order.status;
     response.orderItems = order.orderItems.map((item) => OrderItemResponse.from(item));
     response.createdAt = order.createdAt;

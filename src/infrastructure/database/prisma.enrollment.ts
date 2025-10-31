@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 import { Enrollment } from '@/domain/enrollments/enrollment';
 import { type IEnrollmentRepository } from '@/domain/enrollments/enrollment.repository';
+import { LectureProgress } from '@/domain/enrollments/lecture-progress';
 import { NewEnrollment } from '@/domain/enrollments/new-enrollment';
+import { UpdateLectureProgress } from '@/domain/enrollments/update-lecture-progress';
 
 import { PrismaService } from './prisma.service';
 
@@ -72,6 +74,67 @@ export class PrismaEnrollmentRepository implements IEnrollmentRepository {
     return count > 0;
   }
 
+  async updateLectureProgress(enrollmentId: string, update: UpdateLectureProgress): Promise<LectureProgress> {
+    const progress = await this.prisma.lectureProgress.upsert({
+      where: {
+        enrollmentId_lectureId: {
+          enrollmentId,
+          lectureId: update.lectureId,
+        },
+      },
+      update: {
+        watchTime: update.watchTime,
+        isCompleted: update.isCompleted,
+        completedAt: update.isCompleted ? new Date() : null,
+      },
+      create: {
+        enrollmentId,
+        lectureId: update.lectureId,
+        watchTime: update.watchTime,
+        isCompleted: update.isCompleted,
+        completedAt: update.isCompleted ? new Date() : null,
+      },
+    });
+
+    return this.toLectureProgressEntity(progress);
+  }
+
+  async findLectureProgressByEnrollmentId(enrollmentId: string): Promise<LectureProgress[]> {
+    const progresses = await this.prisma.lectureProgress.findMany({
+      where: { enrollmentId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return progresses.map((p) => this.toLectureProgressEntity(p));
+  }
+
+  async findLectureProgress(enrollmentId: string, lectureId: string): Promise<LectureProgress | null> {
+    const progress = await this.prisma.lectureProgress.findUnique({
+      where: {
+        enrollmentId_lectureId: {
+          enrollmentId,
+          lectureId,
+        },
+      },
+    });
+
+    return progress ? this.toLectureProgressEntity(progress) : null;
+  }
+
+  async updateEnrollmentProgress(enrollmentId: string, progress: number): Promise<Enrollment> {
+    const updated = await this.prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        progress,
+        lastAccessedAt: new Date(),
+        isCompleted: progress === 100,
+        completedAt: progress === 100 ? new Date() : null,
+      },
+    });
+
+    return this.toEntity(updated);
+  }
+
   private toEntity(enrollment: any): Enrollment {
     return new Enrollment(
       enrollment.id,
@@ -85,6 +148,19 @@ export class PrismaEnrollmentRepository implements IEnrollmentRepository {
       enrollment.completedAt,
       enrollment.createdAt,
       enrollment.updatedAt,
+    );
+  }
+
+  private toLectureProgressEntity(progress: any): LectureProgress {
+    return new LectureProgress(
+      progress.id,
+      progress.enrollmentId,
+      progress.lectureId,
+      progress.watchTime,
+      progress.isCompleted,
+      progress.completedAt,
+      progress.createdAt,
+      progress.updatedAt,
     );
   }
 }

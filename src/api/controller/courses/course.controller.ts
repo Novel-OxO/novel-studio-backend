@@ -15,7 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 
 import { AdminGuard } from '@/api/controller/auth/admin.guard';
 import { CurrentUser, type CurrentUserPayload } from '@/api/controller/auth/current-user.decorator';
-import { LectureResponse } from '@/api/controller/lectures/lecture.response';
+import { LecturePreviewResponse } from '@/api/controller/lectures/lecture.response';
 import { SectionResponse } from '@/api/controller/sections/section.response';
 import {
   createPaginatedResponse,
@@ -74,6 +74,70 @@ export class CourseController {
     return createPaginatedResponse(courseResponses, totalCount, query.page!, query.pageSize!);
   }
 
+  @Get('detail/:slug')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'slug로 코스 상세 조회 (섹션 및 강의 목록 포함, 비디오 URL 제외)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '코스 상세 조회 성공',
+    type: CourseResponse,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: '코스를 찾을 수 없습니다',
+  })
+  async getCourseBySlug(@Param('slug') slug: string): Promise<SuccessResponse<CourseResponse>> {
+    const course = await this.courseService.getCourseBySlug(slug, {
+      includeSections: true,
+      includeLectures: true,
+    });
+
+    const sections = course.sections?.map(
+      (section) =>
+        new SectionResponse(
+          section.id,
+          section.title,
+          section.order,
+          section.courseId,
+          section.createdAt,
+          section.updatedAt,
+        ),
+    );
+
+    // 비디오 URL을 제외한 강의 정보만 반환
+    const lectures = course.lectures?.map(
+      (lecture) =>
+        new LecturePreviewResponse(
+          lecture.id,
+          lecture.title,
+          lecture.description,
+          lecture.order,
+          lecture.duration,
+          lecture.isPreview,
+          lecture.sectionId,
+          lecture.courseId,
+          lecture.createdAt,
+          lecture.updatedAt,
+        ),
+    );
+
+    const response = new CourseResponse(
+      course.id,
+      course.slug,
+      course.title,
+      course.description,
+      course.thumbnailUrl,
+      course.price,
+      course.level,
+      course.status,
+      course.createdAt,
+      sections,
+      lectures,
+    );
+
+    return createSuccessResponse(response);
+  }
+
   /**
    * 코스 상세 조회
    *
@@ -120,7 +184,7 @@ export class CourseController {
 
     const lectures = course.lectures?.map(
       (lecture) =>
-        new LectureResponse(
+        new LecturePreviewResponse(
           lecture.id,
           lecture.title,
           lecture.description,
@@ -129,7 +193,6 @@ export class CourseController {
           lecture.isPreview,
           lecture.sectionId,
           lecture.courseId,
-          lecture.videoStorageInfo,
           lecture.createdAt,
           lecture.updatedAt,
         ),

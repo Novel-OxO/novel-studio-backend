@@ -6,6 +6,7 @@ import { LoggerMiddleware } from '@/api/support';
 import { AuthModule } from './auth.module';
 import { CartModule } from './cart.module';
 import { CourseModule } from './course.module';
+import { EnrollmentModule } from './enrollment.module';
 import { LectureModule } from './lecture.module';
 import { MediaModule } from './media.module';
 import { OrderModule } from './order.module';
@@ -47,6 +48,7 @@ const internalModules = [
   CartModule,
   OrderModule,
   PaymentModule,
+  EnrollmentModule,
   QuestionModule,
   ReviewModule,
   MediaModule,

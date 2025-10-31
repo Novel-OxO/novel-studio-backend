@@ -21,7 +21,6 @@ export class MediaController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Presigned URL 생성' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Presigned URL 생성 성공' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: '권한 없음 (관리자만 가능)' })
   async generatePresignedUrl(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: GeneratePresignedUrlDto,

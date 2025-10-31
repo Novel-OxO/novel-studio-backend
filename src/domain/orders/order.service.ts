@@ -42,10 +42,10 @@ export class OrderService {
     });
 
     // 총 금액 계산
-    const totalPrice = orderItems.reduce((sum, item) => sum + item.price, 0);
+    const totalAmount = orderItems.reduce((sum, item) => sum + item.price, 0);
 
     // 주문 생성
-    const newOrder = new NewOrder(userId, totalPrice, orderItems);
+    const newOrder = new NewOrder(userId, totalAmount, orderItems);
     const order = await this.orderRepository.save(newOrder);
 
     // 장바구니 비우기

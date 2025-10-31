@@ -4,10 +4,10 @@ export class Lecture {
   description: string | null;
   order: number;
   duration: number | null;
+  videoUrl: string | null;
   isPreview: boolean;
   sectionId: string;
   courseId: string;
-  videoStorageInfo: any | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -18,10 +18,10 @@ export class Lecture {
     description: string | null,
     order: number,
     duration: number | null,
+    videoUrl: string | null,
     isPreview: boolean,
     sectionId: string,
     courseId: string,
-    videoStorageInfo: unknown | null,
     createdAt: Date,
     updatedAt: Date,
     deletedAt: Date | null,
@@ -31,10 +31,10 @@ export class Lecture {
     this.description = description;
     this.order = order;
     this.duration = duration;
+    this.videoUrl = videoUrl;
     this.isPreview = isPreview;
     this.sectionId = sectionId;
     this.courseId = courseId;
-    this.videoStorageInfo = videoStorageInfo;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.deletedAt = deletedAt;
